@@ -1,10 +1,32 @@
 import { NextResponse } from 'next/server';
+import { NewApiService } from '@/lib/newApiService';
+
+async function fetchWithRetry(url: string | URL, options: RequestInit, retries = 3): Promise<Response> {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers: {
+          ...options.headers,
+          'Accept': 'application/json',
+          'Connection': 'keep-alive'
+        }
+      });
+      return response;
+    } catch (error) {
+      if (i === retries - 1) throw error;
+      console.log(`Retry attempt ${i + 1} of ${retries}`);
+      await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+    }
+  }
+  throw new Error('All retry attempts failed');
+}
 
 export async function POST(req: Request) {
   try {
     // 检查 API 密钥
-    if (!process.env.OPENROUTER_API_KEY) {
-      console.error('OPENROUTER_API_KEY is not set');
+    if (!process.env.NEW_API_KEY) {
+      console.error('NEW_API_KEY is not set');
       return NextResponse.json(
         { error: 'API key is not configured' },
         { status: 500 }
@@ -12,93 +34,40 @@ export async function POST(req: Request) {
     }
 
     const { prompt } = await req.json();
-    console.log('Received prompt:', prompt);
 
     if (!prompt) {
       return NextResponse.json(
-        { error: 'Prompt is required' },
+        { error: '请提供图片描述' },
         { status: 400 }
       );
     }
 
-    console.log('Calling OpenRouter API...');
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
-        'X-Title': 'AI Image Generator'
-      },
-      body: JSON.stringify({
-        model: "anthropic/claude-3-opus-20240229",  // 使用支持图像生成的模型
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text: `Generate a detailed image description for: ${prompt}. The description should be vivid and detailed enough to create an image.`
-              }
-            ]
-          }
-        ],
-        max_tokens: 1000,
-        temperature: 0.7
-      })
+    console.log('Received prompt:', prompt);
+
+    const apiService = NewApiService.getInstance();
+    const result = await apiService.generateImage(prompt, {
+      size: '1024x1024',
+      quality: 'standard',
+      style: 'natural'
     });
 
-    // 记录响应状态和头信息
-    console.log('Response status:', response.status);
-    console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+    console.log('API Response:', result);
 
-    // 获取响应文本
-    const responseText = await response.text();
-    console.log('Raw response:', responseText);
+    // 假设 New API 返回的数据格式为 { data: [{ url: string }] }
+    const imageUrl = result.data?.[0]?.url;
 
-    if (!response.ok) {
-      try {
-        const errorData = JSON.parse(responseText);
-        console.error('API Error:', errorData);
-        throw new Error(errorData.error?.message || 'Failed to generate image');
-      } catch (parseError) {
-        console.error('Parse Error:', parseError);
-        throw new Error(`API error: ${response.status} - ${responseText}`);
-      }
+    if (!imageUrl) {
+      console.error('No image URL in response:', result);
+      throw new Error('未收到图片URL');
     }
 
-    // 尝试解析 JSON
-    let data;
-    try {
-      data = JSON.parse(responseText);
-      console.log('Parsed response:', data);
-    } catch (parseError) {
-      console.error('Failed to parse response as JSON:', parseError);
-      throw new Error('Invalid response from API');
-    }
-    
-    if (!data.choices?.[0]?.message?.content) {
-      console.error('Unexpected response structure:', data);
-      throw new Error('No content in response');
-    }
-
-    // 将文本描述转换为 base64 图片数据
-    const imageDescription = data.choices[0].message.content;
-    const imageData = `data:image/png;base64,${Buffer.from(imageDescription).toString('base64')}`;
-
-    return NextResponse.json({ 
-      imageUrl: imageData
-    });
-  } catch (error: any) {
-    console.error('Detailed error:', {
-      message: error.message,
-      stack: error.stack
-    });
-
+    return NextResponse.json({ imageUrl });
+  } catch (error) {
+    console.error('Error generating image:', error);
     return NextResponse.json(
       { 
-        error: error.message || 'Failed to process request',
-        details: error
+        error: '生成图片失败',
+        details: error instanceof Error ? error.message : '未知错误'
       },
       { status: 500 }
     );
