@@ -2,22 +2,49 @@
 
 import { useEffect, useState } from "react"
 import { HistoryIcon, PlusCircle } from "lucide-react"
-
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { supabase } from "@/lib/supabase"
 
 export default function CreditBalance() {
-  const [credits, setCredits] = useState(100)
-  const [history, setHistory] = useState([
-    { id: 1, type: "消费", amount: -10, description: "生成图片", date: "2023-05-08 14:30" },
-    { id: 2, type: "充值", amount: 100, description: "购买基础套餐", date: "2023-05-07 10:15" },
-    { id: 3, type: "消费", amount: -10, description: "生成图片", date: "2023-05-06 18:45" },
-  ])
+  const [credits, setCredits] = useState(0)
+  const [history, setHistory] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  // 获取用户ID（这里简单使用本地存储，实际应该从登录系统获取）
+  const userId = localStorage.getItem('userId') || 'default-user'
+
+  // 获取积分余额
+  const fetchCredits = async () => {
+    try {
+      const response = await fetch(`/api/credits?userId=${userId}`)
+      const data = await response.json()
+      setCredits(data.credits)
+    } catch (error) {
+      console.error('获取积分失败:', error)
+    }
+  }
+
+  // 获取积分历史
+  const fetchHistory = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('credit_history')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+      
+      if (error) throw error
+      setHistory(data || [])
+    } catch (error) {
+      console.error('获取历史记录失败:', error)
+    }
+  }
 
   useEffect(() => {
-    // In a real app, this would fetch the user's credit balance from an API
-    // setCredits(fetchedCredits)
+    fetchCredits()
+    fetchHistory()
   }, [])
 
   return (
@@ -46,11 +73,13 @@ export default function CreditBalance() {
               </TabsList>
               <TabsContent value="all" className="max-h-[400px] overflow-y-auto">
                 <div className="space-y-2 mt-2">
-                  {history.map((item) => (
+                  {history.map((item: any) => (
                     <div key={item.id} className="flex justify-between p-3 border rounded-md">
                       <div>
                         <p className="font-medium">{item.description}</p>
-                        <p className="text-sm text-muted-foreground">{item.date}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {new Date(item.created_at).toLocaleString()}
+                        </p>
                       </div>
                       <p className={item.amount > 0 ? "text-green-600" : "text-red-600"}>
                         {item.amount > 0 ? "+" : ""}
@@ -68,7 +97,9 @@ export default function CreditBalance() {
                       <div key={item.id} className="flex justify-between p-3 border rounded-md">
                         <div>
                           <p className="font-medium">{item.description}</p>
-                          <p className="text-sm text-muted-foreground">{item.date}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(item.created_at).toLocaleString()}
+                          </p>
                         </div>
                         <p className="text-red-600">{item.amount}</p>
                       </div>
@@ -83,7 +114,9 @@ export default function CreditBalance() {
                       <div key={item.id} className="flex justify-between p-3 border rounded-md">
                         <div>
                           <p className="font-medium">{item.description}</p>
-                          <p className="text-sm text-muted-foreground">{item.date}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(item.created_at).toLocaleString()}
+                          </p>
                         </div>
                         <p className="text-green-600">+{item.amount}</p>
                       </div>
@@ -94,7 +127,11 @@ export default function CreditBalance() {
           </DialogContent>
         </Dialog>
       </div>
-      <Button className="w-full" variant="outline">
+      <Button 
+        className="w-full" 
+        variant="outline"
+        onClick={() => window.location.href = '/recharge'}
+      >
         <PlusCircle className="h-4 w-4 mr-2" />
         充值积分
       </Button>
