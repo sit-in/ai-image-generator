@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { supabaseServer } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
 
 // 获取用户积分
@@ -12,7 +12,7 @@ export async function GET(request: Request) {
     }
 
     // 获取用户积分
-    const { data, error } = await supabase
+    const { data, error } = await supabaseServer
       .from('user_credits')
       .select('credits')
       .eq('user_id', userId)
@@ -21,7 +21,7 @@ export async function GET(request: Request) {
     if (error) {
       // 如果用户不存在，创建新用户
       if (error.code === 'PGRST116') {
-        const { data: newUser, error: createError } = await supabase
+        const { data: newUser, error: createError } = await supabaseServer
           .from('user_credits')
           .insert({ user_id: userId, credits: 0 })
           .select()
@@ -56,7 +56,7 @@ export async function POST(request: Request) {
     }
 
     // 使用 upsert 更新积分
-    const { data: userData, error: userError } = await supabase
+    const { data: userData, error: userError } = await supabaseServer
       .from('user_credits')
       .upsert(
         { 
@@ -77,7 +77,7 @@ export async function POST(request: Request) {
     }
 
     // 记录历史
-    const { error: historyError } = await supabase
+    const { error: historyError } = await supabaseServer
       .from('credit_history')
       .insert({
         user_id: userId,
@@ -110,7 +110,7 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: '需要用户ID' }, { status: 400 })
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseServer
       .from('credit_history')
       .select('*')
       .eq('user_id', userId)

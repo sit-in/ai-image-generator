@@ -8,17 +8,21 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { supabase } from "@/lib/supabase"
 
 export default function CreditBalance() {
+  const [userId, setUserId] = useState<string | null>(null)
   const [credits, setCredits] = useState(0)
-  const [history, setHistory] = useState([])
+  const [history, setHistory] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
-  // 获取用户ID（这里简单使用本地存储，实际应该从登录系统获取）
-  const userId = localStorage.getItem('userId') || 'default-user'
+  // 只在客户端获取 userId
+  useEffect(() => {
+    const id = typeof window !== 'undefined' ? localStorage.getItem('userId') : null
+    setUserId(id)
+  }, [])
 
   // 获取积分余额
-  const fetchCredits = async () => {
+  const fetchCredits = async (uid: string) => {
     try {
-      const response = await fetch(`/api/credits?userId=${userId}`)
+      const response = await fetch(`/api/credits?userId=${uid}`)
       const data = await response.json()
       setCredits(data.credits)
     } catch (error) {
@@ -27,14 +31,13 @@ export default function CreditBalance() {
   }
 
   // 获取积分历史
-  const fetchHistory = async () => {
+  const fetchHistory = async (uid: string) => {
     try {
       const { data, error } = await supabase
         .from('credit_history')
         .select('*')
-        .eq('user_id', userId)
+        .eq('user_id', uid)
         .order('created_at', { ascending: false })
-      
       if (error) throw error
       setHistory(data || [])
     } catch (error) {
@@ -43,9 +46,10 @@ export default function CreditBalance() {
   }
 
   useEffect(() => {
-    fetchCredits()
-    fetchHistory()
-  }, [])
+    if (!userId) return
+    fetchCredits(userId)
+    fetchHistory(userId)
+  }, [userId])
 
   return (
     <div className="space-y-4">
