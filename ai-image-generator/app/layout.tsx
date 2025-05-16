@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
-import { Toaster } from '@/components/ui/toaster'
+import { Toaster } from 'sonner'
 import Navigation from '@/components/navigation'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -19,18 +19,9 @@ export default function RootLayout({
   return (
     <html lang="zh">
       <body className={inter.className}>
-        <header className="border-b">
-          <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-            <a href="/" className="text-xl font-bold">
-              AI 图片生成器
-            </a>
-            <Navigation />
-          </div>
-        </header>
-        <main>
-          {children}
-        </main>
-        <Toaster />
+        <Navigation />
+        {children}
+        <Toaster position="top-center" richColors />
       </body>
     </html>
   )

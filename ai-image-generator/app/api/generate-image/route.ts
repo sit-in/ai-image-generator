@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { NewApiService } from '@/lib/newApiService';
+import { supabaseServer } from '@/lib/supabase-server';
 
 async function fetchWithRetry(url: string | URL, options: RequestInit, retries = 3): Promise<Response> {
   for (let i = 0; i < retries; i++) {
@@ -33,7 +34,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { prompt } = await req.json();
+    const { prompt, userId } = await req.json();
 
     if (!prompt) {
       return NextResponse.json(
@@ -41,6 +42,56 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
+    if (!userId) {
+      return NextResponse.json(
+        { error: '缺少用户ID' },
+        { status: 400 }
+      );
+    }
+
+    // 暂时注释掉积分校验
+    /*
+    // 校验积分
+    const { data: creditData, error: creditError } = await supabaseServer
+      .from('user_credits')
+      .select('credits')
+      .eq('user_id', userId)
+      .single();
+    if (creditError || !creditData) {
+      return NextResponse.json(
+        { error: '无法获取用户积分' },
+        { status: 400 }
+      );
+    }
+    if (creditData.credits < 10) {
+      return NextResponse.json(
+        { error: '积分不足，无法生成图片' },
+        { status: 403 }
+      );
+    }
+
+    // 先扣除积分
+    const { data: updateData, error: updateError } = await supabaseServer
+      .from('user_credits')
+      .update({ credits: creditData.credits - 10 })
+      .eq('user_id', userId)
+      .select()
+      .single();
+    if (updateError) {
+      return NextResponse.json(
+        { error: '扣除积分失败' },
+        { status: 500 }
+      );
+    }
+    // 记录积分历史
+    await supabaseServer
+      .from('credit_history')
+      .insert({
+        user_id: userId,
+        amount: -10,
+        description: '图片生成消耗积分'
+      });
+    */
 
     console.log('Received prompt:', prompt);
 
@@ -63,6 +114,21 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ imageUrl });
   } catch (error) {
+    // 暂时注释掉积分回滚
+    /*
+    // 补偿积分（回滚）
+    await supabaseServer
+      .from('user_credits')
+      .update({ credits: creditData.credits })
+      .eq('user_id', userId);
+    await supabaseServer
+      .from('credit_history')
+      .insert({
+        user_id: userId,
+        amount: 10,
+        description: '图片生成失败积分回滚'
+      });
+    */
     console.error('Error generating image:', error);
     return NextResponse.json(
       { 

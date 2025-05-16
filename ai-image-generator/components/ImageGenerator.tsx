@@ -7,34 +7,80 @@ import { Card } from './ui/card';
 import { Loader2, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import Image from 'next/image';
+import { supabase } from '@/lib/supabase';
 
 export function ImageGenerator() {
   const [prompt, setPrompt] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const checkCredits = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.log('未登录');
+      toast.error('请先登录');
+      return false;
+    }
+    // 暂时注释掉积分校验
+    /*
+    const res = await fetch(`/api/credits?userId=${user.id}`);
+    const data = await res.json();
+    if (data.credits === undefined) {
+      toast.error('无法获取积分信息');
+      return false;
+    }
+    if (data.credits < 10) {
+      toast.error('积分不足，无法生成图片，请先充值');
+      return false;
+    }
+    */
+    return true;
+  };
+
   const generateImage = async () => {
+    const enough = await checkCredits();
+    if (!enough) return;
     try {
       setLoading(true);
       setImageUrl('');
       
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('请先登录');
+        return;
+      }
       const response = await fetch('/api/generate-image', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ prompt, userId: user.id }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
+        // 暂时注释掉积分相关的错误处理
+        /*
+        if (response.status === 403 && data.error?.includes('积分不足')) {
+          toast.error('积分不足，无法生成图片，请先充值');
+          return;
+        }
+        if (data.error?.includes('扣除积分失败')) {
+          toast.error('扣除积分失败，请稍后重试或联系客服');
+          return;
+        }
+        */
         const errorMessage = data.error || '生成图片失败';
-        const errorDetails = data.details ? `\n详细信息: ${JSON.stringify(data.details)}` : '';
+        const errorDetails = data.details ? `详细信息: ${JSON.stringify(data.details)}` : '';
+        toast.error(errorMessage, {
+          description: errorDetails
+        });
         throw new Error(errorMessage + errorDetails);
       }
 
       if (!data.imageUrl) {
+        toast.error('未收到图片URL');
         throw new Error('未收到图片URL');
       }
 
