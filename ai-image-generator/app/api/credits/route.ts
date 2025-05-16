@@ -23,7 +23,7 @@ export async function GET(request: Request) {
       if (error.code === 'PGRST116') {
         const { data: newUser, error: createError } = await supabaseServer
           .from('user_credits')
-          .insert({ user_id: userId, credits: 0 })
+          .insert({ user_id: userId, credits: 30 })
           .select()
           .single()
 

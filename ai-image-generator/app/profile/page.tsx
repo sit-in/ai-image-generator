@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { HistoryIcon, LogOut } from 'lucide-react'
 import Link from 'next/link'
+import { toast } from 'sonner'
 
 export default function ProfilePage() {
   const [user, setUser] = useState<any>(null)
@@ -27,6 +28,10 @@ export default function ProfilePage() {
         const response = await fetch(`/api/credits?userId=${user.id}`)
         const data = await response.json()
         setCredits(data.credits)
+        if (data.credits < 10) {
+          console.log('当前积分：', data.credits);
+          toast.error('积分不足，无法生成图片，请先充值');
+        }
       } catch (error) {
         console.error('获取积分失败:', error)
       } finally {

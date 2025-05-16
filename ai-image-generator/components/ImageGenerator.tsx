@@ -21,8 +21,8 @@ export function ImageGenerator() {
       toast.error('请先登录');
       return false;
     }
-    // 暂时注释掉积分校验
-    /*
+    
+    // 恢复积分校验
     const res = await fetch(`/api/credits?userId=${user.id}`);
     const data = await res.json();
     if (data.credits === undefined) {
@@ -30,10 +30,11 @@ export function ImageGenerator() {
       return false;
     }
     if (data.credits < 10) {
-      toast.error('积分不足，无法生成图片，请先充值');
+      toast.error('积分不足，无法生成图片，请先充值', {
+        description: `当前积分：${data.credits}，生成图片需要10积分`
+      });
       return false;
     }
-    */
     return true;
   };
 
@@ -60,8 +61,7 @@ export function ImageGenerator() {
       const data = await response.json();
 
       if (!response.ok) {
-        // 暂时注释掉积分相关的错误处理
-        /*
+        // 恢复积分相关的错误处理
         if (response.status === 403 && data.error?.includes('积分不足')) {
           toast.error('积分不足，无法生成图片，请先充值');
           return;
@@ -70,7 +70,6 @@ export function ImageGenerator() {
           toast.error('扣除积分失败，请稍后重试或联系客服');
           return;
         }
-        */
         const errorMessage = data.error || '生成图片失败';
         const errorDetails = data.details ? `详细信息: ${JSON.stringify(data.details)}` : '';
         toast.error(errorMessage, {
