@@ -24,6 +24,8 @@ async function fetchWithRetry(url: string | URL, options: RequestInit, retries =
 }
 
 export async function POST(req: Request) {
+  let userId: string | undefined = undefined;
+  let creditData: any = undefined;
   try {
     // 检查 API 密钥
     if (!process.env.NEW_API_KEY) {
@@ -34,7 +36,9 @@ export async function POST(req: Request) {
       );
     }
 
-    const { prompt, userId } = await req.json();
+    const body = await req.json();
+    const prompt = body.prompt;
+    userId = body.userId;
 
     if (!prompt) {
       return NextResponse.json(
@@ -49,14 +53,14 @@ export async function POST(req: Request) {
       );
     }
 
-    // 暂时注释掉积分校验
-    /*
     // 校验积分
-    const { data: creditData, error: creditError } = await supabaseServer
+    const creditRes = await supabaseServer
       .from('user_credits')
       .select('credits')
       .eq('user_id', userId)
       .single();
+    creditData = creditRes.data;
+    const creditError = creditRes.error;
     if (creditError || !creditData) {
       return NextResponse.json(
         { error: '无法获取用户积分' },
@@ -91,7 +95,6 @@ export async function POST(req: Request) {
         amount: -10,
         description: '图片生成消耗积分'
       });
-    */
 
     console.log('Received prompt:', prompt);
 
@@ -114,21 +117,20 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ imageUrl });
   } catch (error) {
-    // 暂时注释掉积分回滚
-    /*
     // 补偿积分（回滚）
-    await supabaseServer
-      .from('user_credits')
-      .update({ credits: creditData.credits })
-      .eq('user_id', userId);
-    await supabaseServer
-      .from('credit_history')
-      .insert({
-        user_id: userId,
-        amount: 10,
-        description: '图片生成失败积分回滚'
-      });
-    */
+    if (typeof userId !== 'undefined' && typeof creditData !== 'undefined') {
+      await supabaseServer
+        .from('user_credits')
+        .update({ credits: creditData.credits })
+        .eq('user_id', userId);
+      await supabaseServer
+        .from('credit_history')
+        .insert({
+          user_id: userId,
+          amount: 10,
+          description: '图片生成失败积分回滚'
+        });
+    }
     console.error('Error generating image:', error);
     return NextResponse.json(
       { 
