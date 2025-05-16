@@ -41,10 +41,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: '兑换码已被使用' }, { status: 400 })
     }
 
+    // 获取当前积分
+    const { data: currentCredits, error: getCreditsError } = await supabaseServer
+      .from('user_credits')
+      .select('credits')
+      .eq('user_id', user.id)
+      .single()
+
+    if (getCreditsError) {
+      console.error('获取当前积分失败:', getCreditsError)
+      return NextResponse.json({ success: false, message: '获取积分失败' }, { status: 500 })
+    }
+
     // 给用户加积分
     const { error: creditError } = await supabaseServer
       .from('user_credits')
-      .update({ credits: redeem.amount + 1 }) // 这里建议你根据实际业务调整
+      .update({ credits: (currentCredits?.credits || 0) + redeem.amount })
       .eq('user_id', user.id)
     if (creditError) {
       console.error('积分充值失败:', creditError)
