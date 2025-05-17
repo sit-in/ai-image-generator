@@ -64,12 +64,53 @@ export async function POST(req: Request) {
     }
 
     // 标记兑换码已用
-    await supabaseServer
+    const { error: updateError } = await supabaseServer
       .from('redeem_codes')
-      .update({ used: true, used_by: user.id, used_at: new Date().toISOString() })
+      .update({ 
+        used: true, 
+        used_by: user.id, 
+        used_at: new Date().toISOString() 
+      })
       .eq('id', redeem.id)
+      .select()  // 添加 select() 来获取更新后的数据
 
-    return NextResponse.json({ success: true, amount: redeem.amount })
+    if (updateError) {
+      console.error('更新兑换码状态失败:', updateError)
+      // 如果更新状态失败，需要回滚积分
+      const { error: rollbackError } = await supabaseServer
+        .from('user_credits')
+        .update({ credits: currentCredits?.credits || 0 })
+        .eq('user_id', user.id)
+      
+      if (rollbackError) {
+        console.error('回滚积分失败:', rollbackError)
+      }
+      
+      return NextResponse.json({ 
+        success: false, 
+        message: '兑换失败，请稍后重试',
+        error: updateError.message 
+      }, { status: 500 })
+    }
+
+    // 记录积分历史
+    const { error: historyError } = await supabaseServer
+      .from('credit_history')
+      .insert({
+        user_id: user.id,
+        amount: redeem.amount,
+        description: '使用兑换码充值'
+      })
+
+    if (historyError) {
+      console.error('记录积分历史失败:', historyError)
+    }
+
+    return NextResponse.json({ 
+      success: true, 
+      amount: redeem.amount,
+      code: redeem.code  // 返回兑换码信息用于调试
+    })
   } catch (error) {
     console.error('处理兑换请求失败:', error)
     return NextResponse.json({ success: false, message: '服务器错误' }, { status: 500 })
