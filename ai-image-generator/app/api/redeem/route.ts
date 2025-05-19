@@ -1,10 +1,15 @@
 import { NextResponse } from 'next/server'
 import { supabaseServer } from '@/lib/supabase-server'
-import { cookies } from 'next/headers'
+import { validateRedeemCode } from '@/lib/redeem-utils'
 
 export async function POST(req: Request) {
   try {
     const { code } = await req.json()
+    
+    // 验证兑换码格式
+    if (!validateRedeemCode(code)) {
+      return NextResponse.json({ success: false, message: '兑换码格式无效' }, { status: 400 })
+    }
     
     // 从 Authorization header 中获取 token
     const authHeader = req.headers.get('Authorization')
@@ -40,6 +45,11 @@ export async function POST(req: Request) {
     if (redeem.used) {
       return NextResponse.json({ success: false, message: '兑换码已被使用' }, { status: 400 })
     }
+    
+    // 检查兑换码是否过期
+    if (redeem.expires_at && new Date(redeem.expires_at) < new Date()) {
+      return NextResponse.json({ success: false, message: '兑换码已过期' }, { status: 400 })
+    }
 
     // 获取当前积分
     const { data: currentCredits, error: getCreditsError } = await supabaseServer
@@ -72,7 +82,7 @@ export async function POST(req: Request) {
         used_at: new Date().toISOString() 
       })
       .eq('id', redeem.id)
-      .select()  // 添加 select() 来获取更新后的数据
+      .select()
 
     if (updateError) {
       console.error('更新兑换码状态失败:', updateError)
@@ -99,7 +109,7 @@ export async function POST(req: Request) {
       .insert({
         user_id: user.id,
         amount: redeem.amount,
-        description: '使用兑换码充值'
+        description: `使用${redeem.type}兑换码充值`
       })
 
     if (historyError) {
@@ -109,7 +119,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ 
       success: true, 
       amount: redeem.amount,
-      code: redeem.code  // 返回兑换码信息用于调试
+      code: redeem.code
     })
   } catch (error) {
     console.error('处理兑换请求失败:', error)
