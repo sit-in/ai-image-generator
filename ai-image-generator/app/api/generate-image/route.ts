@@ -1,161 +1,113 @@
 import { NextResponse } from 'next/server';
-import { NewApiService } from '@/lib/newApiService';
 import { supabaseServer } from '@/lib/supabase-server';
+import { checkCredits, deductCredits } from '@/lib/credits';
 
-async function fetchWithRetry(url: string | URL, options: RequestInit, retries = 3): Promise<Response> {
-  for (let i = 0; i < retries; i++) {
-    try {
-      const response = await fetch(url, {
-        ...options,
-        headers: {
-          ...options.headers,
-          'Accept': 'application/json',
-          'Connection': 'keep-alive'
-        }
-      });
-      return response;
-    } catch (error) {
-      if (i === retries - 1) throw error;
-      console.log(`Retry attempt ${i + 1} of ${retries}`);
-      await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
-    }
-  }
-  throw new Error('All retry attempts failed');
-}
-
-export async function POST(req: Request) {
-  let userId: string | undefined = undefined;
-  let creditData: any = undefined;
+export async function POST(request: Request) {
   try {
-    // 检查 API 密钥
-    if (!process.env.NEW_API_KEY) {
-      console.error('NEW_API_KEY is not set');
-      return NextResponse.json(
-        { error: 'API key is not configured' },
-        { status: 500 }
-      );
-    }
-
-    const body = await req.json();
-    const prompt = body.prompt;
-    userId = body.userId;
+    const { prompt, userId, style = 'natural' } = await request.json();
 
     if (!prompt) {
       return NextResponse.json(
-        { error: '请提供图片描述' },
-        { status: 400 }
-      );
-    }
-    if (!userId) {
-      return NextResponse.json(
-        { error: '缺少用户ID' },
+        { error: '提示词不能为空' },
         { status: 400 }
       );
     }
 
-    // 校验积分
-    const creditRes = await supabaseServer
-      .from('user_credits')
-      .select('credits')
-      .eq('user_id', userId)
-      .single();
-    creditData = creditRes.data;
-    const creditError = creditRes.error;
-    if (creditError || !creditData) {
+    if (!userId) {
       return NextResponse.json(
-        { error: '无法获取用户积分' },
-        { status: 400 }
+        { error: '用户未登录' },
+        { status: 401 }
       );
     }
-    if (creditData.credits < 10) {
+
+    // 检查积分
+    const credits = await checkCredits(userId);
+    if (credits === undefined) {
+      return NextResponse.json(
+        { error: '无法获取积分信息' },
+        { status: 500 }
+      );
+    }
+    if (credits < 10) {
       return NextResponse.json(
         { error: '积分不足，无法生成图片' },
         { status: 403 }
       );
     }
 
-    // 先扣除积分
-    const { data: updateData, error: updateError } = await supabaseServer
-      .from('user_credits')
-      .update({ credits: creditData.credits - 10 })
-      .eq('user_id', userId)
-      .select()
-      .single();
-    if (updateError) {
+    // 调用 @newapi 生成图片
+    const response = await fetch(`${process.env.NEW_API_BASE_URL}/v1/images/generations`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.NEW_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "dall-e-3",
+        prompt: style === 'anime' 
+          ? `${prompt}, anime style, Japanese animation, vibrant colors, detailed illustration`
+          : `${prompt}, photorealistic, high quality, detailed`,
+        n: 1,
+        size: "1024x1024",
+        quality: "standard",
+        style: style === 'anime' ? "vivid" : "natural"
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error('@newapi error:', data);
       return NextResponse.json(
-        { error: '扣除积分失败' },
+        { error: '生成图片失败', details: data },
+        { status: response.status }
+      );
+    }
+
+    const imageUrl = data.data[0].url;
+    if (!imageUrl) {
+      return NextResponse.json(
+        { error: '未收到图片URL' },
         { status: 500 }
       );
     }
-    // 记录积分历史
-    await supabaseServer
-      .from('credit_history')
-      .insert({
-        user_id: userId,
-        amount: -10,
-        description: '图片生成消耗积分'
-      });
 
-    console.log('Received prompt:', prompt);
-
-    const apiService = NewApiService.getInstance();
-    const result = await apiService.generateImage(prompt, {
-      size: '1024x1024',
-      quality: 'standard',
-      style: 'natural'
-    });
-
-    console.log('API Response:', result);
-
-    // 假设 New API 返回的数据格式为 { data: [{ url: string }] }
-    const imageUrl = result.data?.[0]?.url;
-
-    if (!imageUrl) {
-      console.error('No image URL in response:', result);
-      throw new Error('未收到图片URL');
+    // 扣除积分
+    const deductResult = await deductCredits(userId, 10);
+    if (!deductResult.success) {
+      return NextResponse.json(
+        { error: '扣除积分失败', details: deductResult.error },
+        { status: 500 }
+      );
     }
 
-    // 保存生成历史
+    // 保存生成记录
     const { error: historyError } = await supabaseServer
       .from('generation_history')
-      .insert({
-        user_id: userId,
-        prompt: prompt,
-        image_url: imageUrl,
-        parameters: {
-          size: '1024x1024',
-          quality: 'standard',
-          style: 'natural'
+      .insert([
+        {
+          user_id: userId,
+          prompt,
+          image_url: imageUrl,
+          parameters: {
+            style,
+            model: 'dall-e-3',
+            size: '1024x1024',
+            quality: 'standard'
+          }
         }
-      });
+      ]);
 
     if (historyError) {
-      console.error('保存生成历史失败:', historyError);
-      // 这里我们不返回错误，因为图片生成是成功的
+      console.error('保存历史记录失败:', historyError);
+      // 这里我们不返回错误，因为图片已经生成成功
     }
 
     return NextResponse.json({ imageUrl });
   } catch (error) {
-    // 补偿积分（回滚）
-    if (typeof userId !== 'undefined' && typeof creditData !== 'undefined') {
-      await supabaseServer
-        .from('user_credits')
-        .update({ credits: creditData.credits })
-        .eq('user_id', userId);
-      await supabaseServer
-        .from('credit_history')
-        .insert({
-          user_id: userId,
-          amount: 10,
-          description: '图片生成失败积分回滚'
-        });
-    }
-    console.error('Error generating image:', error);
+    console.error('生成图片时发生错误:', error);
     return NextResponse.json(
-      { 
-        error: '生成图片失败',
-        details: error instanceof Error ? error.message : '未知错误'
-      },
+      { error: '生成图片时发生错误', details: error },
       { status: 500 }
     );
   }
