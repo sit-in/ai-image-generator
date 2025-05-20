@@ -46,11 +46,19 @@ export async function POST(request: Request) {
         model: "dall-e-3",
         prompt: style === 'anime' 
           ? `${prompt}, anime style, Japanese animation, vibrant colors, detailed illustration`
+          : style === 'oil'
+          ? `${prompt}, oil painting style, thick brushstrokes, artistic`
+          : style === 'watercolor'
+          ? `${prompt}, watercolor style, soft colors, edge bleeding`
+          : style === 'pixel'
+          ? `${prompt}, pixel art style, retro game, 8-bit`
+          : style === 'ghibli'
+          ? `${prompt}, Studio Ghibli style, warm, detailed, fairy tale`
           : `${prompt}, photorealistic, high quality, detailed`,
         n: 1,
         size: "1024x1024",
         quality: "standard",
-        style: style === 'anime' ? "vivid" : "natural"
+        style: style === 'anime' || style === 'oil' || style === 'watercolor' || style === 'pixel' || style === 'ghibli' ? "vivid" : "natural"
       }),
     });
 

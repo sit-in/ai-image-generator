@@ -8,15 +8,51 @@ import { Loader2, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Label } from './ui/label';
 
 interface ImageGeneratorProps {
   initialPrompt?: string;
 }
 
+const imageStyles = [
+  {
+    id: 'natural',
+    name: '自然风格',
+    description: '真实世界的自然照片风格，适合写实场景。',
+  },
+  {
+    id: 'anime',
+    name: '动漫风格',
+    description: '日系动漫、二次元风格，色彩鲜明，线条清晰。',
+  },
+  {
+    id: 'oil',
+    name: '油画风格',
+    description: '仿油画质感，厚重笔触，艺术感强。',
+  },
+  {
+    id: 'watercolor',
+    name: '水彩风格',
+    description: '水彩画质感，色彩柔和，边缘晕染。',
+  },
+  {
+    id: 'pixel',
+    name: '像素风格',
+    description: '像素艺术风格，复古游戏画面效果。',
+  },
+  {
+    id: 'ghibli',
+    name: '吉卜力风格',
+    description: '宫崎骏动画风格，温暖细腻，充满童话感。',
+  },
+];
+
 export function ImageGenerator({ initialPrompt }: ImageGeneratorProps) {
   const [prompt, setPrompt] = useState(initialPrompt || '');
   const [imageUrl, setImageUrl] = useState('');
   const [loading, setLoading] = useState(false);
+  const [selectedStyle, setSelectedStyle] = useState('natural');
 
   useEffect(() => {
     if (initialPrompt) {
@@ -65,7 +101,11 @@ export function ImageGenerator({ initialPrompt }: ImageGeneratorProps) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ prompt, userId: user.id }),
+        body: JSON.stringify({ 
+          prompt, 
+          userId: user.id,
+          style: selectedStyle 
+        }),
       });
 
       const data = await response.json();
@@ -123,6 +163,25 @@ export function ImageGenerator({ initialPrompt }: ImageGeneratorProps) {
         <h2 className="text-2xl font-bold mb-4">AI 图片生成器</h2>
         
         <div className="space-y-4">
+          <div className="space-y-2">
+            <Label>图片风格</Label>
+            <Select value={selectedStyle} onValueChange={setSelectedStyle}>
+              <SelectTrigger>
+                <SelectValue placeholder="选择风格" />
+              </SelectTrigger>
+              <SelectContent>
+                {imageStyles.map((style) => (
+                  <SelectItem key={style.id} value={style.id}>
+                    {style.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-sm text-muted-foreground">
+              {imageStyles.find(s => s.id === selectedStyle)?.description}
+            </p>
+          </div>
+
           <Input
             placeholder="描述你想要生成的图片..."
             value={prompt}
