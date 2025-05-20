@@ -5,6 +5,8 @@ import { supabase } from '@/lib/supabase'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useRouter } from 'next/navigation'
+import { Button } from '@/components/ui/button'
+import { ArrowLeft } from 'lucide-react'
 
 export default function HistoryPage() {
   const [user, setUser] = useState<any>(null)
@@ -44,6 +46,19 @@ export default function HistoryPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-2xl mx-auto">
+        <div className="flex items-center gap-4 mb-8">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => router.push('/')}
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            返回首页
+          </Button>
+          <h1 className="text-2xl font-bold">积分消费记录</h1>
+        </div>
+
         <Card>
           <CardHeader>
             <CardTitle>积分消费记录</CardTitle>

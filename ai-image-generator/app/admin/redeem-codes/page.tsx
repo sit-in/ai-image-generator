@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { Label } from '@/components/ui/label'
+import { ArrowLeft } from 'lucide-react'
 
 type RedeemCode = {
   id: string
@@ -167,6 +168,19 @@ export default function RedeemCodesPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      <div className="flex items-center gap-4 mb-8">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => router.push('/')}
+          className="flex items-center gap-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          返回首页
+        </Button>
+        <h1 className="text-2xl font-bold">兑换码管理</h1>
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle>兑换码管理</CardTitle>

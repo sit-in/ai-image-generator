@@ -139,13 +139,6 @@ export default function CreditBalance() {
         <PlusCircle className="h-4 w-4 mr-2" />
         充值积分
       </Button>
-      <Button 
-        className="w-full" 
-        variant="outline"
-        onClick={() => window.location.href = '/redeem'}
-      >
-        使用兑换码充值
-      </Button>
     </div>
   )
 }
