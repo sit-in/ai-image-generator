@@ -8,7 +8,6 @@ import { Loader2, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Label } from './ui/label';
 
 interface ImageGeneratorProps {
@@ -164,29 +163,28 @@ export function ImageGenerator({ initialPrompt }: ImageGeneratorProps) {
         
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label>图片风格</Label>
-            <Select value={selectedStyle} onValueChange={setSelectedStyle}>
-              <SelectTrigger>
-                <SelectValue placeholder="选择风格" />
-              </SelectTrigger>
-              <SelectContent>
-                {imageStyles.map((style) => (
-                  <SelectItem key={style.id} value={style.id}>
-                    {style.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-sm text-muted-foreground">
-              {imageStyles.find(s => s.id === selectedStyle)?.description}
-            </p>
+            <div className="text-sm font-medium">图片风格</div>
+            <div className="flex flex-col gap-2">
+              {imageStyles.map((style) => (
+                <button
+                  key={style.id}
+                  className={`p-2 rounded-lg border transition-all
+                    ${selectedStyle === style.id ? 'border-blue-500 shadow-lg bg-blue-50' : 'border-gray-200 bg-white'}
+                    hover:scale-105 hover:shadow-md`}
+                  onClick={() => setSelectedStyle(style.id)}
+                >
+                  <div className="text-sm font-medium">{style.name}</div>
+                  <div className="text-xs text-gray-500">{style.description}</div>
+                </button>
+              ))}
+            </div>
           </div>
 
           <Input
             placeholder="描述你想要生成的图片..."
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            className="w-full"
+            className="w-full h-12 text-base"
             disabled={loading}
           />
           
