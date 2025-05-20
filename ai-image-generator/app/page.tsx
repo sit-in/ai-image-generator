@@ -7,7 +7,11 @@ import { ImageGenerator } from "@/components/ImageGenerator"
 import CreditBalance from "@/components/credit-balance"
 import RechargePackages from "@/components/recharge-packages"
 
-export default function HomePage() {
+export default function HomePage({
+  searchParams,
+}: {
+  searchParams: { prompt?: string }
+}) {
   return (
     <div className="container mx-auto px-4 py-8">
       <header className="mb-8">
@@ -30,7 +34,7 @@ export default function HomePage() {
             </TabsList>
             <TabsContent value="generate" className="mt-4">
               <Suspense fallback={<LoadingState />}>
-                <ImageGenerator />
+                <ImageGenerator initialPrompt={searchParams.prompt} />
               </Suspense>
             </TabsContent>
             <TabsContent value="recharge" className="mt-4">
@@ -67,9 +71,8 @@ export default function HomePage() {
 
 function LoadingState() {
   return (
-    <div className="flex flex-col items-center justify-center p-12">
+    <div className="flex items-center justify-center p-8">
       <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      <p className="mt-2 text-muted-foreground">加载中...</p>
     </div>
   )
 }

@@ -115,6 +115,25 @@ export async function POST(req: Request) {
       throw new Error('未收到图片URL');
     }
 
+    // 保存生成历史
+    const { error: historyError } = await supabaseServer
+      .from('generation_history')
+      .insert({
+        user_id: userId,
+        prompt: prompt,
+        image_url: imageUrl,
+        parameters: {
+          size: '1024x1024',
+          quality: 'standard',
+          style: 'natural'
+        }
+      });
+
+    if (historyError) {
+      console.error('保存生成历史失败:', historyError);
+      // 这里我们不返回错误，因为图片生成是成功的
+    }
+
     return NextResponse.json({ imageUrl });
   } catch (error) {
     // 补偿积分（回滚）

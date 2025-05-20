@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Card } from './ui/card';
@@ -9,10 +9,20 @@ import { toast } from 'sonner';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 
-export function ImageGenerator() {
-  const [prompt, setPrompt] = useState('');
+interface ImageGeneratorProps {
+  initialPrompt?: string;
+}
+
+export function ImageGenerator({ initialPrompt }: ImageGeneratorProps) {
+  const [prompt, setPrompt] = useState(initialPrompt || '');
   const [imageUrl, setImageUrl] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (initialPrompt) {
+      setPrompt(initialPrompt);
+    }
+  }, [initialPrompt]);
 
   const checkCredits = async () => {
     const { data: { user } } = await supabase.auth.getUser();

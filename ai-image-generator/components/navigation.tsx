@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { NavigationMenu, NavigationMenuList, NavigationMenuItem, NavigationMenuLink } from '@/components/ui/navigation-menu'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { User, LogOut } from 'lucide-react'
+import { User, LogOut, History } from 'lucide-react'
 
 export default function Navigation() {
   const [user, setUser] = useState<any>(null)
@@ -36,49 +36,36 @@ export default function Navigation() {
   }
 
   return (
-    <header className="w-full flex items-center justify-between px-6 py-4 border-b">
-      {/* 左侧可放 logo 或留空 */}
-      <div />
-      <div className="flex items-center">
-        <NavigationMenu>
-          <NavigationMenuList className="justify-end">
-            {!loading && (
-              <>
-                {user ? (
-                  <>
-                    <NavigationMenuItem>
-                      <Link href="/profile" legacyBehavior passHref>
-                        <NavigationMenuLink className="px-4 py-2 hover:bg-accent rounded-md flex items-center">
-                          <User className="h-4 w-4 mr-2" />
-                          {user.email}
-                        </NavigationMenuLink>
-                      </Link>
-                    </NavigationMenuItem>
-                    <NavigationMenuItem>
-                      <Button
-                        variant="ghost"
-                        onClick={handleLogout}
-                        className="px-4 py-2 hover:bg-accent rounded-md flex items-center"
-                      >
-                        <LogOut className="h-4 w-4 mr-2" />
-                        退出
-                      </Button>
-                    </NavigationMenuItem>
-                  </>
-                ) : (
-                  <NavigationMenuItem>
-                    <Link href="/login" legacyBehavior passHref>
-                      <NavigationMenuLink className="px-4 py-2 hover:bg-accent rounded-md">
-                        登录/注册
-                      </NavigationMenuLink>
-                    </Link>
-                  </NavigationMenuItem>
-                )}
-              </>
-            )}
-          </NavigationMenuList>
-        </NavigationMenu>
+    <nav className="border-b">
+      <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+        <Link href="/" className="text-xl font-bold">
+          AI 图片生成器
+        </Link>
+
+        <div className="flex items-center gap-4">
+          {user ? (
+            <>
+              <Link href="/generations">
+                <Button variant="ghost" className="flex items-center gap-2">
+                  <History className="h-4 w-4" />
+                  生成历史
+                </Button>
+              </Link>
+              <Button variant="ghost" onClick={handleLogout} className="flex items-center gap-2">
+                <LogOut className="h-4 w-4" />
+                退出
+              </Button>
+            </>
+          ) : (
+            <Link href="/login">
+              <Button variant="ghost" className="flex items-center gap-2">
+                <User className="h-4 w-4" />
+                登录
+              </Button>
+            </Link>
+          )}
+        </div>
       </div>
-    </header>
+    </nav>
   )
 } 
