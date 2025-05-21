@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
 import { checkCredits, deductCredits } from '@/lib/credits';
+import { saveImageToStorage } from '@/lib/storage';
 
 export async function POST(request: Request) {
   try {
@@ -80,9 +81,18 @@ export async function POST(request: Request) {
       );
     }
 
+    // 保存图片到 Supabase Storage
+    const { publicUrl, storagePath } = await saveImageToStorage(imageUrl, userId);
+
     // 扣除积分
     const deductResult = await deductCredits(userId, 10);
     if (!deductResult.success) {
+      // 如果扣除积分失败，删除已上传的图片
+      await supabaseServer
+        .storage
+        .from('generated-images')
+        .remove([storagePath]);
+        
       return NextResponse.json(
         { error: '扣除积分失败', details: deductResult.error },
         { status: 500 }
@@ -96,7 +106,8 @@ export async function POST(request: Request) {
         {
           user_id: userId,
           prompt,
-          image_url: imageUrl,
+          image_url: publicUrl,
+          storage_path: storagePath,
           parameters: {
             style,
             model: 'dall-e-3',
@@ -111,7 +122,7 @@ export async function POST(request: Request) {
       // 这里我们不返回错误，因为图片已经生成成功
     }
 
-    return NextResponse.json({ imageUrl });
+    return NextResponse.json({ imageUrl: publicUrl });
   } catch (error) {
     console.error('生成图片时发生错误:', error);
     return NextResponse.json(
