@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
 import { checkCredits, deductCredits } from '@/lib/credits';
 import { saveImageToStorage } from '@/lib/storage';
+import Replicate from "replicate";
 
 export async function POST(request: Request) {
   try {
@@ -36,44 +37,26 @@ export async function POST(request: Request) {
       );
     }
 
-    // 调用 @newapi 生成图片
-    const response = await fetch(`${process.env.NEW_API_BASE_URL}/v1/images/generations`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.NEW_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "dall-e-3",
-        prompt: style === 'anime' 
-          ? `${prompt}, anime style, Japanese animation, vibrant colors, detailed illustration`
-          : style === 'oil'
-          ? `${prompt}, oil painting style, thick brushstrokes, artistic`
-          : style === 'watercolor'
-          ? `${prompt}, watercolor style, soft colors, edge bleeding`
-          : style === 'pixel'
-          ? `${prompt}, pixel art style, retro game, 8-bit`
-          : style === 'ghibli'
-          ? `${prompt}, Studio Ghibli style, warm, detailed, fairy tale`
-          : `${prompt}, photorealistic, high quality, detailed`,
-        n: 1,
-        size: "1024x1024",
-        quality: "standard",
-        style: style === 'anime' || style === 'oil' || style === 'watercolor' || style === 'pixel' || style === 'ghibli' ? "vivid" : "natural"
-      }),
+    // === 用 Replicate 生成图片 ===
+    const replicate = new Replicate({
+      auth: process.env.REPLICATE_API_TOKEN,
     });
 
-    const data = await response.json();
+    // 根据 style 拼接 prompt（如需更丰富风格可扩展）
+    let styledPrompt = prompt;
+    if (style === 'anime') styledPrompt += ', anime style, Japanese animation, vibrant colors, detailed illustration';
+    else if (style === 'oil') styledPrompt += ', oil painting style, thick brushstrokes, artistic';
+    else if (style === 'watercolor') styledPrompt += ', watercolor style, soft colors, edge bleeding';
+    else if (style === 'pixel') styledPrompt += ', pixel art style, retro game, 8-bit';
+    else if (style === 'ghibli') styledPrompt += ', Studio Ghibli style, warm, detailed, fairy tale';
+    else styledPrompt += ', photorealistic, high quality, detailed';
 
-    if (!response.ok) {
-      console.error('@newapi error:', data);
-      return NextResponse.json(
-        { error: '生成图片失败', details: data },
-        { status: response.status }
-      );
-    }
+    const input = { prompt: styledPrompt };
+    // Replicate 只接受 'owner/model' 或 'owner/model:version' 形式
+    const model = (process.env.REPLICATE_MODEL as `${string}/${string}`) || "black-forest-labs/flux-schnell";
+    const output = await replicate.run(model, { input });
+    const imageUrl = Array.isArray(output) ? output[0] : output;
 
-    const imageUrl = data.data[0].url;
     if (!imageUrl) {
       return NextResponse.json(
         { error: '未收到图片URL' },
@@ -92,7 +75,6 @@ export async function POST(request: Request) {
         .storage
         .from('generated-images')
         .remove([storagePath]);
-        
       return NextResponse.json(
         { error: '扣除积分失败', details: deductResult.error },
         { status: 500 }
@@ -110,7 +92,7 @@ export async function POST(request: Request) {
           storage_path: storagePath,
           parameters: {
             style,
-            model: 'dall-e-3',
+            model,
             size: '1024x1024',
             quality: 'standard'
           }
