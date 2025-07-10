@@ -44,12 +44,15 @@ export async function POST(request: Request) {
 
     // 根据 style 拼接 prompt（如需更丰富风格可扩展）
     let styledPrompt = prompt;
-    if (style === 'anime') styledPrompt += ', anime style, Japanese animation, vibrant colors, detailed illustration';
-    else if (style === 'oil') styledPrompt += ', oil painting style, thick brushstrokes, artistic';
-    else if (style === 'watercolor') styledPrompt += ', watercolor style, soft colors, edge bleeding';
-    else if (style === 'pixel') styledPrompt += ', pixel art style, retro game, 8-bit';
-    else if (style === 'ghibli') styledPrompt += ', Studio Ghibli style, warm, detailed, fairy tale';
-    else styledPrompt += ', photorealistic, high quality, detailed';
+    if (style === 'anime') styledPrompt += ', anime style, Japanese animation, vibrant colors, detailed illustration, family friendly';
+    else if (style === 'oil') styledPrompt += ', oil painting style, thick brushstrokes, artistic, tasteful';
+    else if (style === 'watercolor') styledPrompt += ', watercolor style, soft colors, edge bleeding, elegant';
+    else if (style === 'pixel') styledPrompt += ', pixel art style, retro game, 8-bit, clean';
+    else if (style === 'ghibli') styledPrompt += ', Studio Ghibli style, warm, detailed, fairy tale, wholesome';
+    else styledPrompt += ', photorealistic, high quality, detailed, appropriate content';
+    
+    // 添加安全词汇来避免 NSFW 检测
+    styledPrompt += ', safe for work, family friendly, appropriate';
 
     const input = { prompt: styledPrompt };
     // Replicate 只接受 'owner/model' 或 'owner/model:version' 形式
@@ -107,6 +110,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ imageUrl: publicUrl });
   } catch (error) {
     console.error('生成图片时发生错误:', error);
+    
+    // 处理 NSFW 内容错误
+    if (error instanceof Error && error.message.includes('NSFW content')) {
+      return NextResponse.json(
+        { 
+          error: '生成的内容被检测为不适合的内容，请尝试使用不同的描述或更温和的词汇',
+          details: 'NSFW content detected',
+          code: 'NSFW_DETECTED'
+        },
+        { status: 400 }
+      );
+    }
+    
     return NextResponse.json(
       { error: '生成图片时发生错误', details: error },
       { status: 500 }

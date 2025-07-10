@@ -53,10 +53,21 @@ export default function ImageGenerator() {
 
       // Deduct credits
       await deductCredits(10)
-    } catch (err) {
+    } catch (err: any) {
       console.error("Image generation failed:", err)
       setStatus("error")
-      setError("图片生成失败，请稍后再试")
+      
+      // 处理 NSFW 错误
+      if (err.message && err.message.includes('NSFW')) {
+        setError("生成的内容被检测为不适合的内容，请尝试使用不同的描述或更温和的词汇")
+        toast({
+          title: "内容检测提醒",
+          description: "请避免使用可能被误解的词汇，尝试更温和的描述",
+          variant: "destructive",
+        })
+      } else {
+        setError("图片生成失败，请稍后再试")
+      }
     }
   }
 

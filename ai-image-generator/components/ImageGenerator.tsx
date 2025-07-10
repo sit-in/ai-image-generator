@@ -110,6 +110,14 @@ export function ImageGenerator({ initialPrompt }: ImageGeneratorProps) {
       const data = await response.json();
 
       if (!response.ok) {
+        // 处理 NSFW 内容错误
+        if (data.code === 'NSFW_DETECTED' || (data.error && data.error.includes('NSFW'))) {
+          toast.error('内容检测提醒', {
+            description: '生成的内容被检测为不适合的内容，请尝试使用不同的描述或更温和的词汇'
+          });
+          return;
+        }
+        
         // 恢复积分相关的错误处理
         if (response.status === 403 && data.error?.includes('积分不足')) {
           toast.error('积分不足，无法生成图片，请先充值');
@@ -180,13 +188,18 @@ export function ImageGenerator({ initialPrompt }: ImageGeneratorProps) {
             </div>
           </div>
 
-          <Input
-            placeholder="描述你想要生成的图片..."
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            className="w-full h-12 text-base"
-            disabled={loading}
-          />
+          <div className="space-y-2">
+            <Input
+              placeholder="描述你想要生成的图片..."
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              className="w-full h-12 text-base"
+              disabled={loading}
+            />
+            <div className="text-xs text-gray-500">
+              💡 提示：避免使用可能被误解的词汇，尝试使用"美丽"、"优雅"、"温馨"等温和的描述
+            </div>
+          </div>
           
           <Button 
             onClick={generateImage} 
