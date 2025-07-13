@@ -6,7 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 export default function SupportPage() {
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-blue-900/20">
+      <div className="container mx-auto px-4 py-8">
       <Link href="/" className="flex items-center text-muted-foreground hover:text-foreground mb-6">
         <ArrowLeft className="mr-2 h-4 w-4" />
         返回首页
@@ -77,6 +78,7 @@ export default function SupportPage() {
           </Card>
         </div>
       </div>
+    </div>
     </div>
   )
 }
