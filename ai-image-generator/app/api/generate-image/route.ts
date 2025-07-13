@@ -42,17 +42,62 @@ export async function POST(request: Request) {
       auth: process.env.REPLICATE_API_TOKEN,
     });
 
-    // 根据 style 拼接 prompt（如需更丰富风格可扩展）
-    let styledPrompt = prompt;
-    if (style === 'anime') styledPrompt += ', anime style, Japanese animation, vibrant colors, detailed illustration, family friendly';
-    else if (style === 'oil') styledPrompt += ', oil painting style, thick brushstrokes, artistic, tasteful';
-    else if (style === 'watercolor') styledPrompt += ', watercolor style, soft colors, edge bleeding, elegant';
-    else if (style === 'pixel') styledPrompt += ', pixel art style, retro game, 8-bit, clean';
-    else if (style === 'ghibli') styledPrompt += ', Studio Ghibli style, warm, detailed, fairy tale, wholesome';
-    else styledPrompt += ', photorealistic, high quality, detailed, appropriate content';
+    // 构建精确的提示词 - 重点关注用户原始输入的准确性
+    let cleanPrompt = prompt.trim();
     
-    // 添加安全词汇来避免 NSFW 检测
-    styledPrompt += ', safe for work, family friendly, appropriate';
+    // 检查是否是中文输入，如果是，可以考虑翻译或使用英文关键词
+    const chinesePattern = /[\u4e00-\u9fff]/;
+    const isChinese = chinesePattern.test(cleanPrompt);
+    
+    // 如果包含中文，保持原样，但在前面加上英文描述以提高准确性
+    if (isChinese) {
+      // 对常见中文词汇做简单映射
+      const chineseToEnglish: { [key: string]: string } = {
+        '美女': 'beautiful woman',
+        '帅哥': 'handsome man', 
+        '女孩': 'girl',
+        '男孩': 'boy',
+        '猫': 'cat',
+        '狗': 'dog',
+        '花': 'flower',
+        '山': 'mountain',
+        '海': 'ocean',
+        '城市': 'city',
+        '森林': 'forest'
+      };
+      
+      // 尝试找到中文关键词的英文对应
+      let englishEquivalent = '';
+      for (const [chinese, english] of Object.entries(chineseToEnglish)) {
+        if (cleanPrompt.includes(chinese)) {
+          englishEquivalent = english;
+          break;
+        }
+      }
+      
+      // 如果找到对应的英文，使用英文作为主要描述
+      if (englishEquivalent) {
+        cleanPrompt = `${englishEquivalent}, ${cleanPrompt}`;
+      }
+    }
+    
+    // 风格映射 - 将风格描述放在最前面
+    const styleDescriptions = {
+      'anime': 'anime style',
+      'oil': 'oil painting style',  
+      'watercolor': 'watercolor painting style',
+      'pixel': 'pixel art style',
+      'ghibli': 'Studio Ghibli style',
+      'natural': 'realistic style'
+    };
+    
+    const styleDesc = styleDescriptions[style as keyof typeof styleDescriptions] || styleDescriptions.natural;
+    let styledPrompt = `${styleDesc}, ${cleanPrompt}, high quality`;
+
+    // 调试日志 - 打印实际发送的提示词
+    console.log('原始提示词:', prompt);
+    console.log('风格:', style);
+    console.log('最终提示词:', styledPrompt);
 
     const input = { prompt: styledPrompt };
     // Replicate 只接受 'owner/model' 或 'owner/model:version' 形式
