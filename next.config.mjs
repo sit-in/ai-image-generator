@@ -8,6 +8,10 @@ const nextConfig = {
   },
   images: {
     unoptimized: true,
+    domains: ['localhost', '*.supabase.co'],
+  },
+  experimental: {
+    serverComponentsExternalPackages: ['replicate'],
   },
 }
 
