@@ -1,3 +1,5 @@
+import { securityHeaders } from './next-security.config.js'
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   eslint: {
@@ -8,10 +10,50 @@ const nextConfig = {
   },
   images: {
     unoptimized: true,
-    domains: ['localhost', '*.supabase.co'],
+    domains: ['localhost', '*.supabase.co', 'replicate.delivery'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'xjgwqnwsupsxbztfwuua.supabase.co',
+        port: '',
+        pathname: '/storage/v1/object/public/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'replicate.delivery',
+        port: '',
+        pathname: '/**',
+      },
+    ],
   },
   experimental: {
     serverComponentsExternalPackages: ['replicate'],
+  },
+  
+  // 安全配置
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: securityHeaders,
+      },
+    ]
+  },
+  
+  // 重定向配置
+  async redirects() {
+    return [
+      {
+        source: '/admin',
+        destination: '/admin/redeem-codes',
+        permanent: true,
+      },
+    ]
+  },
+  
+  // 环境变量验证
+  env: {
+    CUSTOM_KEY: process.env.CUSTOM_KEY,
   },
 }
 

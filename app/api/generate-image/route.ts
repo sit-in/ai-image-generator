@@ -2,15 +2,43 @@ import { NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
 import { checkCredits, deductCredits } from '@/lib/credits';
 import { saveImageToStorage } from '@/lib/storage';
+import { rateLimiters, createRateLimitResponse } from '@/lib/rate-limiter';
+import { schemas, validateInput, sanitizeInput, containsSensitiveWords, logSecurityEvent } from '@/lib/security';
 import Replicate from "replicate";
 
 export async function POST(request: Request) {
   try {
-    const { prompt, userId, style = 'natural' } = await request.json();
+    // 速率限制检查
+    const rateLimitResult = rateLimiters.imageGeneration.check(request as any);
+    if (!rateLimitResult.allowed) {
+      return createRateLimitResponse(
+        rateLimiters.imageGeneration['config'].message || '请求过于频繁',
+        rateLimitResult.resetTime
+      );
+    }
 
-    if (!prompt) {
+    const body = await request.json();
+    const { prompt, userId, style = 'natural' } = body;
+
+    // 输入验证
+    const validation = validateInput(schemas.imageGeneration, {
+      prompt,
+      style,
+      size: '1024x1024',
+      quality: 'standard'
+    });
+
+    if (!validation.success) {
+      logSecurityEvent({
+        type: 'input_validation_failed',
+        userId,
+        ip: request.headers.get('x-forwarded-for') || 'unknown',
+        userAgent: request.headers.get('user-agent') || 'unknown',
+        details: { error: validation.error, input: body }
+      });
+      
       return NextResponse.json(
-        { error: '提示词不能为空' },
+        { error: validation.error },
         { status: 400 }
       );
     }
@@ -19,6 +47,32 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: '用户未登录' },
         { status: 401 }
+      );
+    }
+
+    // 验证用户session
+    const { data: { user }, error: userError } = await supabaseServer.auth.getUser();
+    if (userError || !user || user.id !== userId) {
+      return NextResponse.json(
+        { error: '用户身份验证失败' },
+        { status: 401 }
+      );
+    }
+
+    // 内容安全检查
+    const sanitizedPrompt = sanitizeInput(prompt);
+    if (containsSensitiveWords(sanitizedPrompt)) {
+      logSecurityEvent({
+        type: 'suspicious_activity',
+        userId,
+        ip: request.headers.get('x-forwarded-for') || 'unknown',
+        userAgent: request.headers.get('user-agent') || 'unknown',
+        details: { prompt: sanitizedPrompt, reason: 'sensitive_words' }
+      });
+      
+      return NextResponse.json(
+        { error: '提示词包含敏感内容，请修改后重试' },
+        { status: 400 }
       );
     }
 
@@ -43,7 +97,7 @@ export async function POST(request: Request) {
     });
 
     // 构建精确的提示词 - 重点关注用户原始输入的准确性
-    let cleanPrompt = prompt.trim();
+    let cleanPrompt = sanitizedPrompt;
     
     // 检查是否是中文输入，如果是，可以考虑翻译或使用英文关键词
     const chinesePattern = /[\u4e00-\u9fff]/;
@@ -135,7 +189,7 @@ export async function POST(request: Request) {
       .insert([
         {
           user_id: userId,
-          prompt,
+          prompt: sanitizedPrompt,
           image_url: publicUrl,
           storage_path: storagePath,
           parameters: {
@@ -152,9 +206,24 @@ export async function POST(request: Request) {
       // 这里我们不返回错误，因为图片已经生成成功
     }
 
-    return NextResponse.json({ imageUrl: publicUrl });
+    // 添加速率限制头部
+    const response = NextResponse.json({ imageUrl: publicUrl });
+    response.headers.set('X-RateLimit-Limit', rateLimiters.imageGeneration['config'].maxRequests.toString());
+    response.headers.set('X-RateLimit-Remaining', rateLimitResult.remaining.toString());
+    response.headers.set('X-RateLimit-Reset', new Date(rateLimitResult.resetTime).toISOString());
+    
+    return response;
   } catch (error) {
     console.error('生成图片时发生错误:', error);
+    
+    // 记录错误事件
+    logSecurityEvent({
+      type: 'suspicious_activity',
+      userId: (await request.json()).userId,
+      ip: request.headers.get('x-forwarded-for') || 'unknown',
+      userAgent: request.headers.get('user-agent') || 'unknown',
+      details: { error: error instanceof Error ? error.message : 'unknown_error' }
+    });
     
     // 处理 NSFW 内容错误
     if (error instanceof Error && error.message.includes('NSFW content')) {
@@ -169,7 +238,7 @@ export async function POST(request: Request) {
     }
     
     return NextResponse.json(
-      { error: '生成图片时发生错误', details: error },
+      { error: '生成图片时发生错误' },
       { status: 500 }
     );
   }

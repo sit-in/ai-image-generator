@@ -1,0 +1,140 @@
+import { NextRequest } from 'next/server'
+
+interface RateLimitConfig {
+  windowMs: number // 时间窗口（毫秒）
+  maxRequests: number // 最大请求数
+  message?: string // 超限时的错误消息
+}
+
+interface RateLimitEntry {
+  count: number
+  resetTime: number
+}
+
+// 内存存储（生产环境建议使用Redis）
+const store = new Map<string, RateLimitEntry>()
+
+export class RateLimiter {
+  private config: RateLimitConfig
+
+  constructor(config: RateLimitConfig) {
+    this.config = config
+  }
+
+  // 获取客户端标识符
+  private getClientId(request: NextRequest): string {
+    // 优先使用用户ID，其次使用IP
+    const userId = request.cookies.get('user-id')?.value
+    if (userId) return `user:${userId}`
+    
+    const forwarded = request.headers.get('x-forwarded-for')
+    const ip = forwarded ? forwarded.split(',')[0] : request.ip || 'unknown'
+    return `ip:${ip}`
+  }
+
+  // 检查是否超过限制
+  check(request: NextRequest): { allowed: boolean; remaining: number; resetTime: number } {
+    const clientId = this.getClientId(request)
+    const now = Date.now()
+    
+    // 清理过期的记录
+    this.cleanup(now)
+    
+    let entry = store.get(clientId)
+    
+    if (!entry) {
+      // 首次请求
+      entry = {
+        count: 1,
+        resetTime: now + this.config.windowMs
+      }
+      store.set(clientId, entry)
+      
+      return {
+        allowed: true,
+        remaining: this.config.maxRequests - 1,
+        resetTime: entry.resetTime
+      }
+    }
+    
+    if (now >= entry.resetTime) {
+      // 重置窗口
+      entry.count = 1
+      entry.resetTime = now + this.config.windowMs
+      store.set(clientId, entry)
+      
+      return {
+        allowed: true,
+        remaining: this.config.maxRequests - 1,
+        resetTime: entry.resetTime
+      }
+    }
+    
+    // 在窗口内
+    entry.count++
+    store.set(clientId, entry)
+    
+    return {
+      allowed: entry.count <= this.config.maxRequests,
+      remaining: Math.max(0, this.config.maxRequests - entry.count),
+      resetTime: entry.resetTime
+    }
+  }
+
+  // 清理过期记录
+  private cleanup(now: number) {
+    for (const [key, entry] of store.entries()) {
+      if (now >= entry.resetTime) {
+        store.delete(key)
+      }
+    }
+  }
+}
+
+// 预定义的限制器
+export const rateLimiters = {
+  // 图片生成限制：每分钟3次
+  imageGeneration: new RateLimiter({
+    windowMs: 60 * 1000, // 1分钟
+    maxRequests: 3,
+    message: '图片生成请求过于频繁，请稍后再试'
+  }),
+  
+  // API通用限制：每分钟100次
+  api: new RateLimiter({
+    windowMs: 60 * 1000, // 1分钟
+    maxRequests: 100,
+    message: 'API请求过于频繁，请稍后再试'
+  }),
+  
+  // 登录限制：每5分钟10次
+  auth: new RateLimiter({
+    windowMs: 5 * 60 * 1000, // 5分钟
+    maxRequests: 10,
+    message: '登录尝试过于频繁，请稍后再试'
+  }),
+  
+  // 兑换码限制：每小时5次
+  redeem: new RateLimiter({
+    windowMs: 60 * 60 * 1000, // 1小时
+    maxRequests: 5,
+    message: '兑换码使用过于频繁，请稍后再试'
+  })
+}
+
+// 创建速率限制响应
+export function createRateLimitResponse(message: string, resetTime: number) {
+  return new Response(
+    JSON.stringify({
+      error: message,
+      resetTime: new Date(resetTime).toISOString()
+    }),
+    {
+      status: 429,
+      headers: {
+        'Content-Type': 'application/json',
+        'Retry-After': Math.ceil((resetTime - Date.now()) / 1000).toString()
+      }
+    }
+  )
+}

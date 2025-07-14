@@ -1,42 +1,51 @@
 import { NextResponse } from 'next/server'
 import { supabaseServer } from '@/lib/supabase-server'
 import { validateRedeemCode } from '@/lib/redeem-utils'
+import { rateLimiters, createRateLimitResponse } from '@/lib/rate-limiter'
+import { schemas, validateInput, sanitizeInput, logSecurityEvent } from '@/lib/security'
+import { requireAuth } from '@/lib/auth-enhanced'
 
 export async function POST(req: Request) {
   try {
-    const { code } = await req.json()
-    
-    // 验证兑换码格式
-    if (!validateRedeemCode(code)) {
-      return NextResponse.json({ success: false, message: '兑换码格式无效' }, { status: 400 })
+    // 速率限制检查
+    const rateLimitResult = rateLimiters.redeem.check(req as any);
+    if (!rateLimitResult.allowed) {
+      return createRateLimitResponse(
+        rateLimiters.redeem['config'].message || '兑换请求过于频繁',
+        rateLimitResult.resetTime
+      );
     }
-    
-    // 从 Authorization header 中获取 token
-    const authHeader = req.headers.get('Authorization')
-    if (!authHeader?.startsWith('Bearer ')) {
-      console.error('缺少认证 token')
-      return NextResponse.json({ success: false, message: '未登录' }, { status: 401 })
+
+    const body = await req.json()
+    const { code } = body;
+
+    // 输入验证
+    const validation = validateInput(schemas.redeemCode, { code });
+    if (!validation.success) {
+      logSecurityEvent({
+        type: 'input_validation_failed',
+        ip: req.headers.get('x-forwarded-for') || 'unknown',
+        userAgent: req.headers.get('user-agent') || 'unknown',
+        details: { error: validation.error, input: body }
+      });
+      
+      return NextResponse.json({ success: false, message: validation.error }, { status: 400 })
     }
-    
-    const token = authHeader.split(' ')[1]
-    
-    // 设置认证信息
-    const { data: { user }, error: authError } = await supabaseServer.auth.getUser(token)
-    
-    if (authError) {
-      console.error('认证检查失败:', authError)
-      return NextResponse.json({ success: false, message: '认证检查失败' }, { status: 401 })
+
+    // 认证检查
+    const authResult = await requireAuth(req as any);
+    if (!authResult.success) {
+      return NextResponse.json({ success: false, message: authResult.error }, { status: 401 });
     }
-    
-    if (!user) {
-      return NextResponse.json({ success: false, message: '未登录' }, { status: 401 })
-    }
+
+    const user = authResult.user;
+    const sanitizedCode = sanitizeInput(code);
 
     // 查找兑换码
     const { data: redeem, error } = await supabaseServer
       .from('redeem_codes')
       .select('*')
-      .eq('code', code)
+      .eq('code', sanitizedCode)
       .single()
 
     if (error || !redeem) {
@@ -116,13 +125,37 @@ export async function POST(req: Request) {
       console.error('记录积分历史失败:', historyError)
     }
 
-    return NextResponse.json({ 
+    // 记录安全事件
+    logSecurityEvent({
+      type: 'suspicious_activity',
+      userId: user.id,
+      ip: req.headers.get('x-forwarded-for') || 'unknown',
+      userAgent: req.headers.get('user-agent') || 'unknown',
+      details: { action: 'redeem_code_used', code: sanitizedCode, amount: redeem.amount }
+    });
+
+    const response = NextResponse.json({ 
       success: true, 
       amount: redeem.amount,
       code: redeem.code
-    })
+    });
+
+    // 添加速率限制头部
+    response.headers.set('X-RateLimit-Limit', rateLimiters.redeem['config'].maxRequests.toString());
+    response.headers.set('X-RateLimit-Remaining', rateLimitResult.remaining.toString());
+    response.headers.set('X-RateLimit-Reset', new Date(rateLimitResult.resetTime).toISOString());
+    
+    return response;
   } catch (error) {
     console.error('处理兑换请求失败:', error)
+    
+    logSecurityEvent({
+      type: 'suspicious_activity',
+      ip: req.headers.get('x-forwarded-for') || 'unknown',
+      userAgent: req.headers.get('user-agent') || 'unknown',
+      details: { action: 'redeem_code_error', error: error instanceof Error ? error.message : 'unknown' }
+    });
+    
     return NextResponse.json({ success: false, message: '服务器错误' }, { status: 500 })
   }
 } 
