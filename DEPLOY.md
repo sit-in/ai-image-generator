@@ -55,10 +55,16 @@ REPLICATE_MODEL=black-forest-labs/flux-schnell
 
 ### 6. 故障排除
 
+**包管理器冲突**：
+- 项目使用 npm，确保删除 `pnpm-lock.yaml`
+- Vercel 配置已设置 `"packageManager": "npm"`
+- 使用 `npm ci` 进行可靠的依赖安装
+
 **构建失败**：
 - 检查环境变量是否正确设置
 - 确认 Supabase 配置有效
 - 查看构建日志中的错误信息
+- 确保只有 `package-lock.json`，无其他锁文件
 
 **API 超时**：
 - API 路由已配置 5 分钟超时
@@ -67,6 +73,11 @@ REPLICATE_MODEL=black-forest-labs/flux-schnell
 **图片生成失败**：
 - 检查 Replicate API Token 是否有效
 - 确认 Supabase Storage 权限配置正确
+
+**模块加载错误**：
+- 清理 `.next` 缓存
+- 重新安装依赖：`rm -rf node_modules && npm install`
+- 检查 TypeScript 配置路径映射
 
 ### 7. 监控和分析
 
