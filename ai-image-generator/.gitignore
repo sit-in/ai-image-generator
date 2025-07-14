@@ -1,15 +1,5 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# 操作系统文件
-.DS_Store
-Thumbs.db
-
-# 编辑器文件
-.idea/
-.vscode/
-*.swp
-*.swo
-
 # dependencies
 /node_modules
 
@@ -36,16 +26,3 @@ env.bak
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-
-# test files and docs
-girl/
-docs/claude-code/
-public/screenshots/
-
-# backup and generated files
-*.bak.zip
-生成的图片/
-*.bak
-*.tmp
-.cache/
-.temp/
