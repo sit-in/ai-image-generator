@@ -51,7 +51,17 @@ export async function POST(request: Request) {
     }
 
     // 验证用户session
-    const { data: { user }, error: userError } = await supabaseServer.auth.getUser();
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
+    
+    if (!token) {
+      return NextResponse.json(
+        { error: '缺少认证token' },
+        { status: 401 }
+      );
+    }
+
+    const { data: { user }, error: userError } = await supabaseServer.auth.getUser(token);
     if (userError || !user || user.id !== userId) {
       return NextResponse.json(
         { error: '用户身份验证失败' },
@@ -216,29 +226,58 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('生成图片时发生错误:', error);
     
-    // 记录错误事件
+    // 记录错误事件 (不重新读取request body)
     logSecurityEvent({
       type: 'suspicious_activity',
-      userId: (await request.json()).userId,
       ip: request.headers.get('x-forwarded-for') || 'unknown',
       userAgent: request.headers.get('user-agent') || 'unknown',
       details: { error: error instanceof Error ? error.message : 'unknown_error' }
     });
     
-    // 处理 NSFW 内容错误
-    if (error instanceof Error && error.message.includes('NSFW content')) {
-      return NextResponse.json(
-        { 
-          error: '生成的内容被检测为不适合的内容，请尝试使用不同的描述或更温和的词汇',
-          details: 'NSFW content detected',
-          code: 'NSFW_DETECTED'
-        },
-        { status: 400 }
-      );
+    // 处理不同类型的错误
+    if (error instanceof Error) {
+      // NSFW 内容错误
+      if (error.message.includes('NSFW content')) {
+        return NextResponse.json(
+          { 
+            error: '生成的内容被检测为不适合的内容，请尝试使用不同的描述或更温和的词汇',
+            details: 'NSFW content detected',
+            code: 'NSFW_DETECTED'
+          },
+          { status: 400 }
+        );
+      }
+      
+      // Replicate API错误
+      if (error.message.includes('502') || error.message.includes('Bad Gateway')) {
+        return NextResponse.json(
+          {
+            error: 'AI图片生成服务暂时不可用，请稍后再试',
+            details: 'Service temporarily unavailable',
+            code: 'SERVICE_UNAVAILABLE'
+          },
+          { status: 503 }
+        );
+      }
+      
+      // 网络超时错误
+      if (error.message.includes('timeout') || error.message.includes('ETIMEDOUT')) {
+        return NextResponse.json(
+          {
+            error: '图片生成超时，请重试',
+            details: 'Request timeout',
+            code: 'TIMEOUT'
+          },
+          { status: 408 }
+        );
+      }
     }
     
     return NextResponse.json(
-      { error: '生成图片时发生错误' },
+      { 
+        error: '生成图片时发生错误，请稍后重试',
+        code: 'UNKNOWN_ERROR'
+      },
       { status: 500 }
     );
   }

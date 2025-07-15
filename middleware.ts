@@ -2,15 +2,22 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 export function middleware(request: NextRequest) {
-  // 获取token从cookie或header
-  const token = request.cookies.get('supabase-auth-token')?.value || 
-                request.headers.get('authorization')?.replace('Bearer ', '')
-  
   const { pathname } = request.nextUrl
 
-  // 需要认证的路由
+  // 获取多种可能的token来源
+  const cookieToken = request.cookies.get('supabase-auth-token')?.value
+  const authHeader = request.headers.get('authorization')
+  const bearerToken = authHeader?.replace('Bearer ', '')
+  
+  // 检查Supabase session cookies
+  const accessToken = request.cookies.get('sb-access-token')?.value
+  const refreshToken = request.cookies.get('sb-refresh-token')?.value
+  
+  // 如果有任何形式的认证信息，认为用户已登录
+  const hasAuth = cookieToken || bearerToken || accessToken || refreshToken
+
+  // 需要认证的路由（移除/generations，让客户端处理）
   const protectedRoutes = [
-    '/generations',
     '/profile',
     '/recharge',
     '/admin',
@@ -32,8 +39,8 @@ export function middleware(request: NextRequest) {
     pathname.startsWith(route)
   )
 
-  // 如果是受保护的路由但没有token，重定向到登录页面
-  if (isProtectedRoute && !token) {
+  // 如果是受保护的路由但没有任何认证信息，重定向到登录页面
+  if (isProtectedRoute && !hasAuth) {
     const loginUrl = new URL('/login', request.url)
     loginUrl.searchParams.set('redirect', pathname)
     return NextResponse.redirect(loginUrl)

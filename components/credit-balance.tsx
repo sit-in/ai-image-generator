@@ -22,11 +22,27 @@ export default function CreditBalance() {
   // 获取积分余额
   const fetchCredits = async (uid: string) => {
     try {
-      const response = await fetch(`/api/credits?userId=${uid}`)
+      const { data: { session } } = await supabase.auth.getSession()
+      const response = await fetch(`/api/credits?userId=${uid}`, {
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`
+        }
+      })
+      
+      if (!response.ok) {
+        if (response.status === 401) {
+          console.error('认证失败，请重新登录')
+          return
+        }
+        throw new Error(`获取积分失败: ${response.status}`)
+      }
+      
       const data = await response.json()
       setCredits(data.credits)
     } catch (error) {
       console.error('获取积分失败:', error)
+    } finally {
+      setLoading(false)
     }
   }
 

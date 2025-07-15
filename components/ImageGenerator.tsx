@@ -68,7 +68,12 @@ export function ImageGenerator({ initialPrompt }: ImageGeneratorProps) {
     }
     
     // 恢复积分校验
-    const res = await fetch(`/api/credits?userId=${user.id}`);
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch(`/api/credits?userId=${user.id}`, {
+      headers: {
+        'Authorization': `Bearer ${session?.access_token}`
+      }
+    });
     const data = await res.json();
     if (data.credits === undefined) {
       toast.error('无法获取积分信息');
@@ -95,10 +100,12 @@ export function ImageGenerator({ initialPrompt }: ImageGeneratorProps) {
         toast.error('请先登录');
         return;
       }
+      const { data: { session } } = await supabase.auth.getSession();
       const response = await fetch('/api/generate-image', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
         },
         body: JSON.stringify({ 
           prompt, 
@@ -110,15 +117,39 @@ export function ImageGenerator({ initialPrompt }: ImageGeneratorProps) {
       const data = await response.json();
 
       if (!response.ok) {
-        // 处理 NSFW 内容错误
-        if (data.code === 'NSFW_DETECTED' || (data.error && data.error.includes('NSFW'))) {
+        // 处理不同类型的错误
+        switch (data.code) {
+          case 'NSFW_DETECTED':
+            toast.error('内容检测提醒', {
+              description: '生成的内容被检测为不适合的内容，请尝试使用不同的描述或更温和的词汇'
+            });
+            return;
+            
+          case 'SERVICE_UNAVAILABLE':
+            toast.error('服务暂时不可用', {
+              description: 'AI图片生成服务暂时不可用，请稍后再试'
+            });
+            return;
+            
+          case 'TIMEOUT':
+            toast.error('请求超时', {
+              description: '图片生成超时，请重试'
+            });
+            return;
+            
+          default:
+            break;
+        }
+        
+        // 兼容旧版错误处理
+        if (data.error && data.error.includes('NSFW')) {
           toast.error('内容检测提醒', {
             description: '生成的内容被检测为不适合的内容，请尝试使用不同的描述或更温和的词汇'
           });
           return;
         }
         
-        // 恢复积分相关的错误处理
+        // 处理积分相关错误
         if (response.status === 403 && data.error?.includes('积分不足')) {
           toast.error('积分不足，无法生成图片，请先充值');
           return;
@@ -127,6 +158,23 @@ export function ImageGenerator({ initialPrompt }: ImageGeneratorProps) {
           toast.error('扣除积分失败，请稍后重试或联系客服');
           return;
         }
+        
+        // 处理服务不可用错误
+        if (response.status === 503) {
+          toast.error('服务暂时不可用', {
+            description: 'AI图片生成服务暂时不可用，请稍后再试'
+          });
+          return;
+        }
+        
+        // 处理超时错误
+        if (response.status === 408) {
+          toast.error('请求超时', {
+            description: '图片生成超时，请重试'
+          });
+          return;
+        }
+        
         const errorMessage = data.error || '生成图片失败';
         const errorDetails = data.details ? `详细信息: ${JSON.stringify(data.details)}` : '';
         toast.error(errorMessage, {

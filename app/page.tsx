@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { ImageGenerator } from "@/components/ImageGenerator"
+import { BatchImageGenerator } from "@/components/BatchImageGenerator"
 import CreditBalance from "@/components/credit-balance"
 import RechargePackages from "@/components/recharge-packages"
 
@@ -53,13 +54,20 @@ export default function HomePage({
             <Card className="shadow-2xl border-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl">
               <CardContent className="p-0">
                 <Tabs defaultValue="generate" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2 p-1 bg-gray-100/50 dark:bg-gray-700/50">
+                  <TabsList className="grid w-full grid-cols-3 p-1 bg-gray-100/50 dark:bg-gray-700/50">
                     <TabsTrigger 
                       value="generate" 
                       className="data-[state=active]:bg-white data-[state=active]:shadow-lg transition-all duration-200"
                     >
                       <ImageIcon className="mr-2 h-4 w-4" />
-                      图片生成
+                      单张生成
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="batch" 
+                      className="data-[state=active]:bg-white data-[state=active]:shadow-lg transition-all duration-200"
+                    >
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      批量生成
                     </TabsTrigger>
                     <TabsTrigger 
                       value="recharge"
@@ -72,6 +80,11 @@ export default function HomePage({
                   <TabsContent value="generate" className="mt-0 p-6">
                     <Suspense fallback={<LoadingState />}>
                       <ImageGenerator initialPrompt={searchParams.prompt} />
+                    </Suspense>
+                  </TabsContent>
+                  <TabsContent value="batch" className="mt-0 p-6">
+                    <Suspense fallback={<LoadingState />}>
+                      <BatchImageGenerator initialPrompt={searchParams.prompt} />
                     </Suspense>
                   </TabsContent>
                   <TabsContent value="recharge" className="mt-0 p-6">

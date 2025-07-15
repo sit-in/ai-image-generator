@@ -11,6 +11,17 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: '需要用户ID' }, { status: 400 })
     }
 
+    // 验证用户认证
+    const authHeader = request.headers.get('authorization')
+    const token = authHeader?.replace('Bearer ', '')
+    
+    if (token) {
+      const { data: { user }, error: userError } = await supabaseServer.auth.getUser(token)
+      if (userError || !user || user.id !== userId) {
+        return NextResponse.json({ error: '用户身份验证失败' }, { status: 401 })
+      }
+    }
+
     // 获取用户积分
     const { data, error } = await supabaseServer
       .from('user_credits')

@@ -33,20 +33,34 @@ export default function GenerationsPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-        if (userError) {
-          console.error('获取用户信息失败:', userError);
-          setError('获取用户信息失败，请重新登录');
-          router.push('/login');
+        // 首先检查 localStorage 中的用户信息
+        const cachedUserId = localStorage.getItem('userId');
+        console.log('缓存的用户ID:', cachedUserId);
+        
+        // 使用 getSession 而不是 getUser，避免强制验证
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (session?.user) {
+          console.log('用户已登录:', session.user.id);
+          setUser(session.user);
+          // 更新缓存
+          localStorage.setItem('userId', session.user.id);
+          await fetchHistory(session.user.id);
           return;
         }
-        if (!user) {
-          setError('请先登录');
-          router.push('/login');
+        
+        // 如果没有session但有缓存的用户ID，尝试使用缓存
+        if (cachedUserId) {
+          console.log('使用缓存的用户ID尝试获取历史');
+          setUser({ id: cachedUserId });
+          await fetchHistory(cachedUserId);
           return;
         }
-        setUser(user);
-        await fetchHistory(user.id);
+        
+        // 没有任何认证信息，跳转到登录页
+        console.log('无认证信息，跳转到登录页');
+        setError('请先登录');
+        router.push('/login');
       } catch (err) {
         console.error('初始化失败:', err);
         setError('系统错误，请稍后重试');
@@ -66,25 +80,32 @@ export default function GenerationsPage() {
         return;
       }
 
-      const { data, error } = await supabase
-        .from('generation_history')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('获取生成历史失败:', error);
-        if (error.code === '42P01') {
-          setError('数据库表不存在，请联系管理员');
-        } else if (error.code === '42501') {
-          setError('没有权限访问历史记录');
-        } else {
-          setError('获取生成历史失败: ' + error.message);
+      console.log('开始获取生成历史，用户ID:', userId);
+      
+      // 使用API而不是直接查询
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch('/api/generation-history', {
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`
         }
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          console.log('认证失败，跳转登录页面');
+          setError('登录状态已过期，请重新登录');
+          router.push('/login');
+          return;
+        }
+        
+        const errorData = await response.json().catch(() => ({ error: '未知错误' }));
+        setError(errorData.error || '获取生成历史失败');
         return;
       }
 
-      setHistory(data || []);
+      const result = await response.json();
+      console.log('成功获取生成历史，数量:', result.data?.length || 0);
+      setHistory(result.data || []);
     } catch (err) {
       console.error('获取生成历史失败:', err);
       setError('系统错误，请稍后重试');
@@ -122,14 +143,25 @@ export default function GenerationsPage() {
     }
 
     try {
-      const { error } = await supabase
-        .from('generation_history')
-        .delete()
-        .eq('id', recordId)
+      // 使用API删除记录
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch(`/api/generation-history?id=${recordId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`
+        }
+      });
 
-      if (error) {
-        toast.error('删除失败: ' + error.message)
-        return
+      if (!response.ok) {
+        if (response.status === 401) {
+          toast.error('登录状态已过期，请重新登录');
+          router.push('/login');
+          return;
+        }
+        
+        const errorData = await response.json().catch(() => ({ error: '删除失败' }));
+        toast.error(errorData.error || '删除失败');
+        return;
       }
 
       // 从本地状态中移除

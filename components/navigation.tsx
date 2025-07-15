@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { NavigationMenu, NavigationMenuList, NavigationMenuItem, NavigationMenuLink } from '@/components/ui/navigation-menu'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { User, LogOut, History } from 'lucide-react'
+import { User, LogOut, History, Layers } from 'lucide-react'
 
 export default function Navigation() {
   const [user, setUser] = useState<any>(null)
@@ -16,16 +16,33 @@ export default function Navigation() {
 
   useEffect(() => {
     const fetchUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      try {
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError || !session?.user) {
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+        setUser(session.user);
+        setLoading(false);
+      } catch (error) {
+        console.error('获取用户状态失败:', error);
         setUser(null);
         setLoading(false);
-        return;
       }
-      setUser(user);
-      setLoading(false);
     };
     fetchUser();
+
+    // 监听认证状态变化
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT' || !session) {
+        setUser(null);
+      } else if (session?.user) {
+        setUser(session.user);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, [pathname]);
 
   const handleLogout = async () => {
@@ -65,6 +82,15 @@ export default function Navigation() {
                 >
                   <History className="h-4 w-4" />
                   <span className="hidden sm:inline">生成历史</span>
+                </Button>
+              </Link>
+              <Link href="/batch">
+                <Button 
+                  variant="ghost" 
+                  className="flex items-center gap-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors duration-200"
+                >
+                  <Layers className="h-4 w-4" />
+                  <span className="hidden sm:inline">批量管理</span>
                 </Button>
               </Link>
               <Button 
