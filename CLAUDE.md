@@ -19,6 +19,35 @@ npm run start
 
 # Run linting
 npm run lint
+
+# Type checking
+npm run typecheck
+```
+
+## MCP (Model Context Protocol) Setup
+
+This project supports MCP servers for enhanced development capabilities. Common MCP servers for this project:
+
+```bash
+# Add database inspection MCP server
+claude mcp add --scope project database-inspector /path/to/database-mcp-server
+
+# Add file system MCP server for better file operations
+claude mcp add --scope project filesystem /path/to/filesystem-mcp-server
+
+# Add web search MCP server for documentation lookup
+claude mcp add --scope project web-search /path/to/web-search-mcp-server
+```
+
+### Recommended MCP Servers for AI Image Generation Projects:
+
+1. **Database MCP Server**: For inspecting Supabase tables and queries
+2. **File System MCP Server**: For better file operations and organization
+3. **Web Search MCP Server**: For looking up API documentation
+4. **Image Processing MCP Server**: For image analysis and manipulation
+
+To configure project-specific MCP servers, create a `.mcp.json` file (see MCP Configuration section below).
+
 ```
 
 ## Environment Setup
@@ -34,6 +63,13 @@ SUPABASE_SERVICE_ROLE_KEY=
 # Replicate API (Required)
 REPLICATE_API_TOKEN=
 REPLICATE_MODEL=black-forest-labs/flux-schnell
+
+# MCP Server Configuration (Optional)
+BRAVE_API_KEY=
+GITHUB_TOKEN=
+DATABASE_URL=
+MCP_TIMEOUT=30000
+MCP_LOG_LEVEL=info
 ```
 
 ## Architecture Overview
@@ -110,3 +146,55 @@ When updating UI components:
 1. Use shadcn/ui components from `/components/ui`
 2. Follow existing Tailwind CSS patterns
 3. Maintain Chinese localization throughout
+
+## MCP Configuration
+
+Create a `.mcp.json` file in the project root for project-specific MCP server configurations:
+
+```json
+{
+  "servers": {
+    "supabase-inspector": {
+      "command": "npx",
+      "args": ["supabase-mcp-server"],
+      "env": {
+        "SUPABASE_URL": "${NEXT_PUBLIC_SUPABASE_URL}",
+        "SUPABASE_KEY": "${SUPABASE_SERVICE_ROLE_KEY}"
+      }
+    },
+    "filesystem": {
+      "command": "node",
+      "args": ["filesystem-mcp-server.js"],
+      "env": {
+        "PROJECT_ROOT": "${PWD}"
+      }
+    },
+    "image-analyzer": {
+      "command": "python",
+      "args": ["-m", "image_mcp_server"],
+      "env": {
+        "STORAGE_BUCKET": "generated-images"
+      }
+    }
+  }
+}
+```
+
+### MCP Server Environment Variables
+
+Add these to your `.env.local` for MCP server configuration:
+
+```env
+# MCP Server Configuration
+MCP_TIMEOUT=30000
+MCP_LOG_LEVEL=info
+```
+
+### Available MCP Commands
+
+Once MCP servers are configured, you can use them in Claude Code:
+
+- **Database queries**: Inspect Supabase tables, run queries, check constraints
+- **File operations**: Advanced file search, bulk operations, code analysis
+- **Image processing**: Analyze generated images, check storage usage
+- **API testing**: Test API endpoints, validate responses
