@@ -1,8 +1,10 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
+import './globals-design-system.css'
 import { Toaster } from 'sonner'
 import Navigation from '@/components/navigation'
+import { StyleProvider } from './providers'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -19,9 +21,11 @@ export default function RootLayout({
   return (
     <html lang="zh">
       <body className={inter.className}>
-        <Navigation />
-        {children}
-        <Toaster position="top-center" richColors />
+        <StyleProvider>
+          <Navigation />
+          {children}
+          <Toaster position="top-center" richColors />
+        </StyleProvider>
       </body>
     </html>
   )

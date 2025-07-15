@@ -8,6 +8,17 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  // 优化CSS处理
+  webpack: (config, { dev, isServer }) => {
+    // 在开发环境下优化CSS热重载
+    if (dev && !isServer) {
+      config.watchOptions = {
+        poll: 1000,
+        aggregateTimeout: 300,
+      }
+    }
+    return config
+  },
   images: {
     unoptimized: true,
     domains: ['localhost', '*.supabase.co', 'replicate.delivery'],

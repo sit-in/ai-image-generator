@@ -1,54 +1,20 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { NavigationMenu, NavigationMenuList, NavigationMenuItem, NavigationMenuLink } from '@/components/ui/navigation-menu'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { User, LogOut, History, Layers } from 'lucide-react'
+import { useAuth } from '@/hooks/useAuth'
 
 export default function Navigation() {
-  const [user, setUser] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+  const { user, loading } = useAuth()
   const router = useRouter()
-  const pathname = usePathname();
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError || !session?.user) {
-          setUser(null);
-          setLoading(false);
-          return;
-        }
-        setUser(session.user);
-        setLoading(false);
-      } catch (error) {
-        console.error('获取用户状态失败:', error);
-        setUser(null);
-        setLoading(false);
-      }
-    };
-    fetchUser();
-
-    // 监听认证状态变化
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT' || !session) {
-        setUser(null);
-      } else if (session?.user) {
-        setUser(session.user);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [pathname]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
     localStorage.removeItem('userId')
-    setUser(null)
     router.push('/login')
   }
 

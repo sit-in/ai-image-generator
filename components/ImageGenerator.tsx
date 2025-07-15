@@ -1,14 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Card } from './ui/card';
-import { Loader2, Download } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { toast } from 'sonner';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
-import { Label } from './ui/label';
+import { CuteButton, CuteCard, CuteInput, CuteBadge } from './CuteUIComponents';
+import { CuteLoadingWithProgress, CuteSuccessAnimation } from './CuteLoadingComponents';
+import { CelebrationAnimation } from './CuteCelebrationComponents';
 
 interface ImageGeneratorProps {
   initialPrompt?: string;
@@ -52,6 +51,8 @@ export function ImageGenerator({ initialPrompt }: ImageGeneratorProps) {
   const [imageUrl, setImageUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [selectedStyle, setSelectedStyle] = useState('natural');
+  const [progress, setProgress] = useState(0);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
     if (initialPrompt) {
@@ -94,6 +95,19 @@ export function ImageGenerator({ initialPrompt }: ImageGeneratorProps) {
     try {
       setLoading(true);
       setImageUrl('');
+      setProgress(0);
+      setShowSuccess(false);
+      
+      // 模拟进度
+      const progressInterval = setInterval(() => {
+        setProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return 90;
+          }
+          return prev + Math.random() * 15;
+        });
+      }, 500);
       
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -189,13 +203,19 @@ export function ImageGenerator({ initialPrompt }: ImageGeneratorProps) {
       }
 
       setImageUrl(data.imageUrl);
+      setProgress(100);
+      setShowSuccess(true);
       toast.success('图片生成成功！');
+      
+      // 3秒后隐藏成功动画
+      setTimeout(() => setShowSuccess(false), 3000);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '生成图片时发生错误';
       toast.error(errorMessage);
       console.error('Error details:', err);
     } finally {
       setLoading(false);
+      setProgress(0);
     }
   };
 
@@ -213,77 +233,77 @@ export function ImageGenerator({ initialPrompt }: ImageGeneratorProps) {
   };
 
   return (
-    <div className="w-full space-y-6">
+    <div className="w-full space-y-8">
+      {/* Success Celebration */}
+      {showSuccess && <CelebrationAnimation />}
       {/* Style Selection */}
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold flex items-center">
-          <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-            选择艺术风格
-          </span>
+        <h2 className="text-xl font-bold text-gray-800 flex items-center">
+          <span className="mr-2 text-2xl">🎨</span>
+          选择你喜欢的风格
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {imageStyles.map((style) => (
-            <button
+            <CuteCard
               key={style.id}
-              className={`group relative p-4 rounded-xl border-2 transition-all duration-300 text-left
-                ${selectedStyle === style.id 
-                  ? 'border-purple-500 shadow-lg bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 scale-105' 
-                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-purple-300 hover:shadow-md hover:scale-102'}
-                `}
-              onClick={() => setSelectedStyle(style.id)}
+              hover={true}
+              rainbow={selectedStyle === style.id}
+              className={`cursor-pointer transition-all duration-300 ${selectedStyle === style.id ? 'scale-105' : ''}`}
             >
+              <button
+                className="w-full text-left"
+                onClick={() => setSelectedStyle(style.id)}
+              >
               <div className="flex items-center justify-between mb-2">
-                <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                <div className="text-sm font-bold text-gray-800">
                   {style.name}
                 </div>
                 {selectedStyle === style.id && (
-                  <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
+                  <div className="w-3 h-3 bg-pink-400 rounded-full animate-pulse"></div>
                 )}
               </div>
-              <div className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+              <div className="text-xs text-gray-600 leading-relaxed">
                 {style.description}
               </div>
-              <div className={`absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none
-                ${selectedStyle === style.id ? 'bg-gradient-to-r from-purple-500/10 to-blue-500/10' : 'bg-gradient-to-r from-gray-500/5 to-gray-500/5'}
-              `}></div>
-            </button>
+              </button>
+            </CuteCard>
           ))}
         </div>
       </div>
 
       {/* Prompt Input */}
-      <div className="space-y-3">
-        <h2 className="text-xl font-semibold flex items-center">
-          <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-            描述您的创意
-          </span>
+      <div className="space-y-4">
+        <h2 className="text-xl font-bold text-gray-800 flex items-center">
+          <span className="mr-2 text-2xl">💭</span>
+          描述你的创意
         </h2>
         <div className="relative">
-          <Input
-            placeholder="例如：一只可爱的橙色小猫，在阳光明媚的花园里玩耍..."
+          <textarea
+            placeholder="例如：一只粉色的小猫咪在彩虹桥上玩耍，周围有很多星星..."
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            className="w-full h-14 text-base pl-4 pr-4 border-2 focus:border-purple-500 rounded-xl bg-white dark:bg-gray-800 transition-all duration-200"
+            className="w-full px-4 py-3 bg-white border-2 border-pink-200 rounded-2xl transition-all duration-300 focus:outline-none focus:border-pink-400 focus:scale-[1.02] focus:shadow-cute-primary min-h-24 resize-none"
             disabled={loading}
+            rows={3}
           />
           {prompt && (
-            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-              <div className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
+            <div className="absolute right-3 bottom-3">
+              <CuteBadge color="pink" size="sm">
                 {prompt.length}/200
-              </div>
+              </CuteBadge>
             </div>
           )}
         </div>
-        <div className="space-y-2">
-          <div className="flex items-center space-x-2 text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg border border-amber-200 dark:border-amber-800">
+        <div className="space-y-3">
+          <div className="flex items-center space-x-2 text-sm text-pink-600 bg-pink-50 p-3 rounded-2xl border border-pink-200">
             <span>💡</span>
-            <span>使用具体、清晰的描述能获得更好的效果，如"美丽的女性"、"英俊的男性"等</span>
+            <span>试试描述一些可爱的场景，比如"粉色的云朵"、"彩虹独角兽"等～</span>
           </div>
           {prompt && (
-            <div className="text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 p-2 rounded border border-blue-200 dark:border-blue-800">
-              <span className="font-medium">预处理后的提示词:</span> 
+            <div className="text-xs text-blue-600 bg-blue-50 p-3 rounded-2xl border border-blue-200">
+              <span className="font-medium">🤖 AI会这样理解你的描述:</span> 
               <br />
-              <span className="font-mono text-xs bg-white dark:bg-gray-800 px-2 py-1 rounded mt-1 inline-block">
+              <span className="font-mono text-xs bg-white px-2 py-1 rounded-full mt-2 inline-block">
                 {(() => {
                   const chineseToEnglish: { [key: string]: string } = {
                     '美女': 'beautiful woman',
@@ -335,37 +355,32 @@ export function ImageGenerator({ initialPrompt }: ImageGeneratorProps) {
       </div>
       
       {/* Generate Button */}
-      <Button 
-        onClick={generateImage} 
+      <CuteButton
+        onClick={generateImage}
         disabled={loading || !prompt}
-        className={`w-full h-14 text-lg font-semibold rounded-xl transition-all duration-300 
-          ${loading || !prompt 
-            ? 'bg-gray-300 dark:bg-gray-600' 
-            : 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg hover:shadow-xl transform hover:scale-105'
-          }`}
+        variant="primary"
+        size="lg"
+        loading={loading}
+        className="w-full"
       >
-        {loading ? (
-          <>
-            <Loader2 className="mr-3 h-5 w-5 animate-spin" />
-            <span>AI正在创作中...</span>
-          </>
-        ) : (
-          <>
-            <span>✨ 开始生成图片</span>
-          </>
-        )}
-      </Button>
+        {loading ? 'AI正在创作中...' : '✨ 开始创作魔法图片 🎨'}
+      </CuteButton>
+      
+      {/* Loading Animation */}
+      {loading && (
+        <div className="mt-8">
+          <CuteLoadingWithProgress progress={progress} />
+        </div>
+      )}
 
       {/* Generated Image */}
       {imageUrl && (
-        <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-500">
-          <h3 className="text-xl font-semibold text-center">
-            <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-              🎨 您的专属AI作品
-            </span>
+        <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
+          <h3 className="text-2xl font-bold text-center text-gray-800">
+            🎉 你的专属AI作品完成啦！
           </h3>
           <div className="relative group">
-            <div className="relative aspect-square w-full overflow-hidden rounded-2xl shadow-2xl border-4 border-white dark:border-gray-700">
+            <div className="relative aspect-square w-full overflow-hidden rounded-3xl shadow-kawaii border-4 border-pink-100">
               <Image 
                 src={imageUrl} 
                 alt="AI Generated Art" 
@@ -373,18 +388,19 @@ export function ImageGenerator({ initialPrompt }: ImageGeneratorProps) {
                 className="object-cover transition-transform duration-300 group-hover:scale-105"
                 priority
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="absolute inset-0 bg-gradient-to-t from-pink-100/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             </div>
-            <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl opacity-20 blur-lg group-hover:opacity-40 transition-opacity duration-300"></div>
+            <div className="absolute -inset-2 bg-gradient-to-r from-pink-300 to-blue-300 rounded-3xl opacity-20 blur-lg group-hover:opacity-40 transition-opacity duration-300"></div>
           </div>
-          <Button 
-            variant="outline" 
+          <CuteButton
             onClick={handleDownload}
-            className="w-full h-12 text-base font-semibold rounded-xl border-2 border-purple-200 dark:border-purple-700 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all duration-200"
+            variant="secondary"
+            size="md"
+            icon={<Download className="w-5 h-5" />}
+            className="w-full"
           >
-            <Download className="mr-2 h-5 w-5" />
-            下载高清图片
-          </Button>
+            下载可爱图片 💕
+          </CuteButton>
         </div>
       )}
     </div>

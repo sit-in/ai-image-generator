@@ -1,0 +1,338 @@
+/* 可爱风格设计系统 */
+
+/* 设计令牌 */
+:root {
+  /* 圆角系统 */
+  --cute-radius-sm: 16px;
+  --cute-radius-md: 20px;
+  --cute-radius-lg: 24px;
+  --cute-radius-xl: 32px;
+  --cute-radius-full: 9999px;
+  
+  /* 阴影系统 */
+  --cute-shadow-sm: 0 2px 8px rgba(246, 135, 179, 0.15);
+  --cute-shadow-md: 0 4px 16px rgba(246, 135, 179, 0.2);
+  --cute-shadow-lg: 0 8px 32px rgba(246, 135, 179, 0.25);
+  --cute-shadow-xl: 0 12px 48px rgba(246, 135, 179, 0.3);
+  
+  /* 彩色阴影 */
+  --cute-shadow-pink: 0 4px 16px rgba(236, 72, 153, 0.25);
+  --cute-shadow-purple: 0 4px 16px rgba(168, 85, 247, 0.25);
+  --cute-shadow-blue: 0 4px 16px rgba(59, 130, 246, 0.25);
+  
+  /* 过渡动画 */
+  --cute-transition-fast: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --cute-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --cute-transition-slow: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* 间距系统 */
+  --cute-spacing-xs: 0.5rem;
+  --cute-spacing-sm: 1rem;
+  --cute-spacing-md: 1.5rem;
+  --cute-spacing-lg: 2rem;
+  --cute-spacing-xl: 3rem;
+  
+  /* 颜色系统 */
+  --cute-gradient-primary: linear-gradient(135deg, #ec4899 0%, #a855f7 100%);
+  --cute-gradient-secondary: linear-gradient(135deg, #3b82f6 0%, #a855f7 100%);
+  --cute-gradient-success: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
+  --cute-gradient-rainbow: linear-gradient(135deg, #ff6b6b 0%, #ffd93d 20%, #6bcf7f 40%, #4ecdc4 60%, #a06cd5 80%, #ff6b6b 100%);
+}
+
+/* 基础组件样式 */
+
+/* 可爱按钮 */
+.cute-button {
+  padding: var(--cute-spacing-sm) var(--cute-spacing-md);
+  border-radius: var(--cute-radius-full);
+  font-weight: 500;
+  transition: var(--cute-transition);
+  transform-origin: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.cute-button-primary {
+  background: var(--cute-gradient-primary);
+  color: white;
+  box-shadow: var(--cute-shadow-pink);
+}
+
+.cute-button-secondary {
+  background: linear-gradient(135deg, #fce7f3 0%, #e9d5ff 100%);
+  color: #6b21a8;
+  box-shadow: var(--cute-shadow-sm);
+}
+
+.cute-button:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: var(--cute-shadow-lg);
+}
+
+.cute-button:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* 闪光效果 */
+.cute-button::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.3) 50%,
+    transparent 70%
+  );
+  transform: rotate(45deg) translate(-100%, -100%);
+  transition: transform 0.6s;
+}
+
+.cute-button:hover::before {
+  transform: rotate(45deg) translate(100%, 100%);
+}
+
+/* 可爱卡片 */
+.cute-card {
+  background: white;
+  border-radius: var(--cute-radius-lg);
+  padding: var(--cute-spacing-lg);
+  box-shadow: var(--cute-shadow-md);
+  transition: var(--cute-transition);
+  position: relative;
+  overflow: hidden;
+}
+
+.cute-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent 0%, rgba(236, 72, 153, 0.03) 100%);
+  pointer-events: none;
+}
+
+.cute-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--cute-shadow-lg);
+}
+
+/* 彩虹边框 */
+.rainbow-border {
+  position: relative;
+  background: white;
+  border-radius: var(--cute-radius-lg);
+}
+
+.rainbow-border::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: calc(var(--cute-radius-lg) + 2px);
+  padding: 2px;
+  background: var(--cute-gradient-rainbow);
+  background-size: 300% 300%;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s;
+  animation: rainbow-move 3s ease-in-out infinite;
+}
+
+.rainbow-border:hover::before {
+  opacity: 1;
+}
+
+@keyframes rainbow-move {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* 浮动动画 */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  33% {
+    transform: translateY(-20px) rotate(5deg);
+  }
+  66% {
+    transform: translateY(-10px) rotate(-5deg);
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* 脉冲动画 */
+@keyframes cute-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+.animate-cute-pulse {
+  animation: cute-pulse 2s ease-in-out infinite;
+}
+
+/* 弹跳动画 */
+@keyframes cute-bounce {
+  0%, 100% {
+    transform: translateY(0) scaleY(1);
+  }
+  50% {
+    transform: translateY(-20px) scaleY(1.1);
+  }
+}
+
+.animate-cute-bounce {
+  animation: cute-bounce 1s ease-in-out infinite;
+}
+
+/* 摇摆动画 */
+@keyframes wiggle {
+  0%, 100% {
+    transform: rotate(-3deg);
+  }
+  50% {
+    transform: rotate(3deg);
+  }
+}
+
+.animate-wiggle {
+  animation: wiggle 0.5s ease-in-out infinite;
+}
+
+/* 装饰元素 */
+.cute-decoration {
+  position: absolute;
+  pointer-events: none;
+  opacity: 0.1;
+}
+
+.cute-sparkle {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background: radial-gradient(circle, rgba(236, 72, 153, 0.8) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: sparkle 2s ease-in-out infinite;
+}
+
+@keyframes sparkle {
+  0%, 100% {
+    opacity: 0;
+    transform: scale(0);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* 输入框样式 */
+.cute-input {
+  border: 2px solid #fce7f3;
+  border-radius: var(--cute-radius-md);
+  padding: var(--cute-spacing-sm) var(--cute-spacing-md);
+  transition: var(--cute-transition);
+  background: white;
+}
+
+.cute-input:focus {
+  outline: none;
+  border-color: #ec4899;
+  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.1);
+  transform: scale(1.02);
+}
+
+/* 选择框样式 */
+.cute-select {
+  border: 2px solid #fce7f3;
+  border-radius: var(--cute-radius-md);
+  padding: var(--cute-spacing-sm) var(--cute-spacing-md);
+  transition: var(--cute-transition);
+  background: white;
+  cursor: pointer;
+}
+
+.cute-select:hover {
+  border-color: #f9a8d4;
+  background: #fdf2f8;
+}
+
+/* 徽章样式 */
+.cute-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--cute-radius-full);
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: var(--cute-transition);
+}
+
+.cute-badge-pink {
+  background: #fce7f3;
+  color: #be185d;
+}
+
+.cute-badge-purple {
+  background: #f3e8ff;
+  color: #7c3aed;
+}
+
+.cute-badge-blue {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+/* 工具提示 */
+.cute-tooltip {
+  position: relative;
+}
+
+.cute-tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-8px);
+  background: #1f2937;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: var(--cute-radius-md);
+  font-size: 0.875rem;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: var(--cute-transition);
+}
+
+.cute-tooltip:hover::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-12px);
+}
+
+/* 过渡效果类 */
+.transition-cute {
+  transition: var(--cute-transition);
+}
+
+.transition-cute-fast {
+  transition: var(--cute-transition-fast);
+}
+
+.transition-cute-slow {
+  transition: var(--cute-transition-slow);
+}

@@ -1,17 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Button } from './ui/button'
-import { Input } from './ui/input'
-import { Card } from './ui/card'
-import { Badge } from './ui/badge'
+import { CuteButton, CuteCard, CuteInput, CuteBadge } from './CuteUIComponents'
 import { Checkbox } from './ui/checkbox'
 import { Progress } from './ui/progress'
 import { Loader2, Download, X, Eye, Play, Pause } from 'lucide-react'
 import { toast } from 'sonner'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
-import { Label } from './ui/label'
 
 interface BatchImageGeneratorProps {
   initialPrompt?: string
@@ -379,24 +375,25 @@ export function BatchImageGenerator({ initialPrompt }: BatchImageGeneratorProps)
   return (
     <div className="space-y-6">
       {/* 批量生成控制面板 */}
-      <Card className="p-6 bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50">
+      <CuteCard rainbow className="p-6">
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold flex items-center gap-2">
               <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
               批量图片生成
             </h3>
-            <Badge variant="secondary">
+            <CuteBadge color="pink" size="md">
               {selectedStyles.length}种风格 • {selectedStyles.length * 10}积分
-            </Badge>
+            </CuteBadge>
           </div>
 
           <div className="space-y-4">
             <div>
-              <Label htmlFor="batch-prompt" className="text-sm font-medium mb-2 block">
+              <label htmlFor="batch-prompt" className="text-sm font-medium mb-2 block text-gray-700">
+                <span className="mr-2">💭</span>
                 描述您想要生成的图片
-              </Label>
-              <Input
+              </label>
+              <CuteInput
                 id="batch-prompt"
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
@@ -407,9 +404,10 @@ export function BatchImageGenerator({ initialPrompt }: BatchImageGeneratorProps)
             </div>
 
             <div>
-              <Label className="text-sm font-medium mb-3 block">
+              <label className="text-sm font-medium mb-3 block text-gray-700">
+                <span className="mr-2">🎨</span>
                 选择图片风格（可多选）
-              </Label>
+              </label>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 {imageStyles.map((style) => (
                   <div key={style.id} className="flex items-center space-x-2">
@@ -419,23 +417,26 @@ export function BatchImageGenerator({ initialPrompt }: BatchImageGeneratorProps)
                       onCheckedChange={(checked) => handleStyleChange(style.id, checked as boolean)}
                       disabled={loading}
                     />
-                    <Label 
+                    <label 
                       htmlFor={style.id}
-                      className="text-sm cursor-pointer hover:text-blue-600"
+                      className="text-sm cursor-pointer hover:text-pink-600 transition-colors"
                       title={style.description}
                     >
                       {style.name}
-                    </Label>
+                    </label>
                   </div>
                 ))}
               </div>
             </div>
 
             <div className="flex gap-3">
-              <Button 
+              <CuteButton 
                 onClick={generateBatchImages}
                 disabled={loading || selectedStyles.length === 0 || !prompt.trim()}
+                variant="primary"
+                size="lg"
                 className="flex-1"
+                loading={loading}
               >
                 {loading ? (
                   <>
@@ -448,35 +449,35 @@ export function BatchImageGenerator({ initialPrompt }: BatchImageGeneratorProps)
                     开始批量生成
                   </>
                 )}
-              </Button>
+              </CuteButton>
               
               {loading && currentBatch && (
-                <Button variant="destructive" onClick={cancelBatch}>
+                <CuteButton variant="secondary" onClick={cancelBatch} size="lg">
                   <X className="w-4 h-4 mr-2" />
                   取消
-                </Button>
+                </CuteButton>
               )}
             </div>
           </div>
         </div>
-      </Card>
+      </CuteCard>
 
       {/* 批量任务进度 */}
       {currentBatch && (
-        <Card className="p-6">
+        <CuteCard hover className="p-6">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h4 className="font-medium">批量生成进度</h4>
-              <Badge variant={
-                currentBatch.status === 'completed' ? 'default' :
-                currentBatch.status === 'processing' ? 'secondary' :
-                currentBatch.status === 'failed' ? 'destructive' : 'outline'
-              }>
+              <CuteBadge color={
+                currentBatch.status === 'completed' ? 'green' :
+                currentBatch.status === 'processing' ? 'blue' :
+                currentBatch.status === 'failed' ? 'pink' : 'yellow'
+              } size="sm">
                 {currentBatch.status === 'pending' && '等待中'}
                 {currentBatch.status === 'processing' && '生成中'}
                 {currentBatch.status === 'completed' && '已完成'}
                 {currentBatch.status === 'failed' && '失败'}
-              </Badge>
+              </CuteBadge>
             </div>
 
             <div className="space-y-2">
@@ -507,19 +508,19 @@ export function BatchImageGenerator({ initialPrompt }: BatchImageGeneratorProps)
               </div>
             </div>
           </div>
-        </Card>
+        </CuteCard>
       )}
 
       {/* 完成的图片展示 */}
       {completedImages.length > 0 && (
-        <Card className="p-6">
+        <CuteCard className="p-6">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h4 className="font-medium">生成完成的图片</h4>
-              <Button onClick={downloadAllImages} variant="outline" size="sm">
+              <CuteButton onClick={downloadAllImages} variant="secondary" size="md">
                 <Download className="w-4 h-4 mr-2" />
-                下载全部
-              </Button>
+                下载全部 💕
+              </CuteButton>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -536,23 +537,23 @@ export function BatchImageGenerator({ initialPrompt }: BatchImageGeneratorProps)
                   </div>
                   <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all rounded-lg flex items-center justify-center">
                     <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
-                      <Button
+                      <CuteButton
                         size="sm"
                         variant="secondary"
                         onClick={() => downloadImage(image.imageUrl, image.style)}
                       >
                         <Download className="w-4 h-4" />
-                      </Button>
+                      </CuteButton>
                     </div>
                   </div>
                   <div className="mt-2 text-center">
-                    <Badge variant="outline">{imageStyles.find(s => s.id === image.style)?.name}</Badge>
+                    <CuteBadge color="blue" size="sm">{imageStyles.find(s => s.id === image.style)?.name}</CuteBadge>
                   </div>
                 </div>
               ))}
             </div>
           </div>
-        </Card>
+        </CuteCard>
       )}
     </div>
   )

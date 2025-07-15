@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -16,25 +16,46 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirect = searchParams.get('redirect') || '/'
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     
-    const { error, data } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) {
+    try {
+      const { error, data } = await supabase.auth.signInWithPassword({ email, password })
+      
+      if (error) {
+        toast.error('登录失败', {
+          description: error.message
+        })
+        setLoading(false)
+        return
+      }
+      
+      if (data.user) {
+        // 登录成功，保存 userId 到 localStorage
+        localStorage.setItem('userId', data.user.id)
+        
+        // 确保会话已经建立
+        const { data: { session } } = await supabase.auth.getSession()
+        console.log('登录成功，会话状态:', session?.user?.email)
+        
+        toast.success('登录成功', {
+          description: '正在跳转...'
+        })
+        
+        // 使用 window.location 确保页面完全刷新，避免认证状态不同步
+        window.location.href = redirect
+      }
+    } catch (err) {
+      console.error('登录错误:', err)
       toast.error('登录失败', {
-        description: error.message
+        description: '请稍后重试'
       })
-    } else {
-      // 登录成功，保存 userId 到 localStorage
-      localStorage.setItem('userId', data.user?.id || '')
-      toast.success('登录成功', {
-        description: '正在跳转到首页...'
-      })
-      setTimeout(() => window.location.replace('/'), 1000)
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   return (

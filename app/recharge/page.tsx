@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -13,27 +13,45 @@ import { ArrowLeft, Gift, CreditCard, Key, Sparkles, ShoppingCart, ExternalLink,
 import RechargePackages from '@/components/recharge-packages'
 
 export default function RechargePage() {
-  const [loading, setLoading] = useState(true)
   const [redeemCode, setRedeemCode] = useState('')
   const [redeeming, setRedeeming] = useState(false)
+  const [checkingAuth, setCheckingAuth] = useState(false)
   const router = useRouter()
 
-  useEffect(() => {
-    checkAuth()
-  }, [])
-
-  const checkAuth = async () => {
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) {
-      router.push('/login')
-      return
+  const checkAuthStatus = async () => {
+    setCheckingAuth(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      console.log('充值页面 - 检查认证:', { 
+        hasSession: !!session,
+        hasUser: !!user,
+        userEmail: user?.email 
+      })
+      
+      if (!session && !user) {
+        router.push('/login?redirect=/recharge')
+        return false
+      }
+      return true
+    } catch (error) {
+      console.error('检查认证失败:', error)
+      return false
+    } finally {
+      setCheckingAuth(false)
     }
-    setLoading(false)
   }
 
   const handleRedeem = async () => {
     if (!redeemCode.trim()) {
       toast.error('请输入兑换码')
+      return
+    }
+
+    // 先检查认证状态
+    const isAuthenticated = await checkAuthStatus()
+    if (!isAuthenticated) {
       return
     }
 
@@ -67,20 +85,7 @@ export default function RechargePage() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-blue-900/20">
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center justify-center h-64">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
-              <p className="mt-2 text-muted-foreground">加载中...</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
+  // 不再在页面加载时检查认证，只在用户操作时检查
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-blue-900/20">

@@ -43,7 +43,7 @@ export async function GET(request: Request) {
           return NextResponse.json({ error: '创建用户失败' }, { status: 500 })
         }
 
-        return NextResponse.json({ credits: 0 })
+        return NextResponse.json({ credits: newUser?.credits || 30 })
       }
 
       console.error('获取积分失败:', error)

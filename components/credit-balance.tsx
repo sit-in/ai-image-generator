@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { HistoryIcon, PlusCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
@@ -8,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { supabase } from "@/lib/supabase"
 
 export default function CreditBalance() {
+  const router = useRouter()
   const [userId, setUserId] = useState<string | null>(null)
   const [credits, setCredits] = useState(0)
   const [history, setHistory] = useState<any[]>([])
@@ -203,7 +205,7 @@ export default function CreditBalance() {
       {/* Quick Recharge Button */}
       <Button 
         className="w-full h-12 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105" 
-        onClick={() => window.location.href = '/recharge'}
+        onClick={() => router.push('/recharge')}
       >
         <PlusCircle className="h-5 w-5 mr-2" />
         立即充值积分

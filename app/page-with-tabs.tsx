@@ -14,7 +14,6 @@ export default function HomePage({
 }: {
   searchParams: { prompt?: string }
 }) {
-  const prompt = searchParams?.prompt || '';
   const tabs = [
     { id: 'single', label: '单张生成', icon: '🎨' },
     { id: 'batch', label: '批量生成', icon: '🎯', badge: 'HOT' }
@@ -83,12 +82,12 @@ export default function HomePage({
                 
                 <CuteTabs tabs={tabs} defaultTab="single">
                   {{
-                    'single': (
+                    single: (
                       <Suspense fallback={<LoadingState />}>
-                        <ImageGenerator initialPrompt={prompt} />
+                        <ImageGenerator initialPrompt={searchParams.prompt} />
                       </Suspense>
                     ),
-                    'batch': (
+                    batch: (
                       <Suspense fallback={<LoadingState />}>
                         <div className="space-y-4">
                           <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-2xl border border-purple-200">
@@ -114,7 +113,7 @@ export default function HomePage({
                               </div>
                             </div>
                           </div>
-                          <BatchImageGenerator initialPrompt={prompt} />
+                          <BatchImageGenerator initialPrompt={searchParams.prompt} />
                         </div>
                       </Suspense>
                     )
@@ -154,8 +153,9 @@ export default function HomePage({
                     </Link>
                   </div>
                   
-                  <Link href="/recharge" className="block w-full">
-                    <CuteButton variant="primary" size="md" className="w-full" icon={<CreditCard className="w-4 h-4" />}>
+                  <Link href="/recharge" className="block">
+                    <CuteButton variant="primary" size="md" className="w-full">
+                      <CreditCard className="w-4 h-4 mr-2" />
                       更多充值选项
                     </CuteButton>
                   </Link>

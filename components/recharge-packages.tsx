@@ -2,6 +2,8 @@
 
 import { useState } from "react"
 import { ExternalLink, ShoppingCart } from "lucide-react"
+import { supabase } from "@/lib/supabase"
+import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -37,21 +39,48 @@ const packages = [
 export default function RechargePackages() {
   const [loading, setLoading] = useState<number | null>(null)
   const { toast } = useToast()
+  const router = useRouter()
 
-  const handleRecharge = (packageId: number) => {
+  const handleRecharge = async (packageId: number) => {
     setLoading(packageId)
 
-    // Simulate API call
-    setTimeout(() => {
-      // In a real app, this would redirect to Taobao or another payment platform
-      window.open("https://www.taobao.com", "_blank")
-      setLoading(null)
+    try {
+      // 检查认证状态
+      const { data: { session } } = await supabase.auth.getSession()
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      console.log('充值套餐 - 检查认证:', { 
+        hasSession: !!session,
+        hasUser: !!user,
+        userEmail: user?.email 
+      })
+      
+      if (!session && !user) {
+        toast({
+          title: "请先登录",
+          description: "您需要登录后才能进行充值",
+        })
+        router.push('/login?redirect=/recharge')
+        return
+      }
 
+      // 认证通过，跳转到淘宝
+      window.open("https://www.taobao.com", "_blank")
+      
       toast({
         title: "跳转到淘宝",
         description: "请在淘宝完成支付，支付成功后积分将自动到账",
       })
-    }, 1000)
+    } catch (error) {
+      console.error('充值失败:', error)
+      toast({
+        title: "操作失败",
+        description: "请稍后重试",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(null)
+    }
   }
 
   return (

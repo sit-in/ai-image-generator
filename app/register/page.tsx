@@ -21,20 +21,41 @@ export default function RegisterPage() {
     e.preventDefault()
     setLoading(true)
     
-    const { error, data } = await supabase.auth.signUp({ email, password })
-    if (error) {
+    try {
+      const { error, data } = await supabase.auth.signUp({ email, password })
+      
+      if (error) {
+        toast.error('注册失败', {
+          description: error.message
+        })
+        setLoading(false)
+        return
+      }
+      
+      if (data.user) {
+        // 注册成功，保存 userId 到 localStorage
+        localStorage.setItem('userId', data.user.id)
+        
+        // 确保会话已经建立
+        const { data: { session } } = await supabase.auth.getSession()
+        console.log('注册成功，会话状态:', session?.user?.email)
+        
+        toast.success('注册成功', {
+          description: '欢迎加入AI创作社区！正在跳转...'
+        })
+        
+        // 使用 window.location 确保页面完全刷新
+        setTimeout(() => {
+          window.location.href = '/'
+        }, 1000)
+      }
+    } catch (err) {
+      console.error('注册错误:', err)
       toast.error('注册失败', {
-        description: error.message
+        description: '请稍后重试'
       })
-    } else {
-      // 注册成功，保存 userId 到 localStorage
-      localStorage.setItem('userId', data.user?.id || '')
-      toast.success('注册成功', {
-        description: '欢迎加入AI创作社区！正在跳转...'
-      })
-      setTimeout(() => window.location.replace('/'), 1000)
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   return (
