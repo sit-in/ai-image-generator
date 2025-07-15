@@ -60,5 +60,6 @@ public/screenshots/
 
 # MCP configuration (keep .mcp.json but ignore sensitive overrides)
 .mcp.local.json
+.mcp.json
 mcp-logs/
 .mcp-cache/
