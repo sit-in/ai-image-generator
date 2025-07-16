@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server'
 import { NextRequest } from 'next/server'
 import { CSRFProtection } from '@/lib/security'
 
+// 标记为动态路由，因为使用了 cookies
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   try {
     // 从session或cookie中获取session ID

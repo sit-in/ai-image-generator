@@ -10,8 +10,15 @@ export function middleware(request: NextRequest) {
   
   // 检查Supabase v2 session cookies
   // Supabase v2 使用带有项目引用的cookie名称
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
-  const projectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1] || ''
+  let projectRef = ''
+  try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+    const match = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)
+    projectRef = match ? match[1] : ''
+  } catch (error) {
+    // 如果解析失败，使用默认值
+    console.error('Failed to parse Supabase URL:', error)
+  }
   
   // Supabase v2 cookie格式: sb-<project-ref>-auth-token
   const authTokenCookie = request.cookies.get(`sb-${projectRef}-auth-token`)?.value
