@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -15,7 +15,8 @@ import RechargePackages from '@/components/recharge-packages'
 export default function RechargePage() {
   const [redeemCode, setRedeemCode] = useState('')
   const [redeeming, setRedeeming] = useState(false)
-  const [checkingAuth, setCheckingAuth] = useState(false)
+  const [checkingAuth, setCheckingAuth] = useState(true)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
   const router = useRouter()
 
   const checkAuthStatus = async () => {
@@ -85,7 +86,27 @@ export default function RechargePage() {
     }
   }
 
-  // 不再在页面加载时检查认证，只在用户操作时检查
+  // 页面加载时检查认证
+  useEffect(() => {
+    checkAuthStatus().then(authenticated => {
+      setIsAuthenticated(authenticated)
+      if (!authenticated) {
+        router.push('/login?redirect=/recharge')
+      }
+    })
+  }, [])
+
+  // 如果正在检查认证，显示加载状态
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-blue-900/20 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-muted-foreground">正在验证身份...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-blue-900/20">

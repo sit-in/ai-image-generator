@@ -5,21 +5,39 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // 获取多种可能的token来源
-  const cookieToken = request.cookies.get('supabase-auth-token')?.value
   const authHeader = request.headers.get('authorization')
   const bearerToken = authHeader?.replace('Bearer ', '')
   
-  // 检查Supabase session cookies
-  const accessToken = request.cookies.get('sb-access-token')?.value
-  const refreshToken = request.cookies.get('sb-refresh-token')?.value
+  // 检查Supabase v2 session cookies
+  // Supabase v2 使用带有项目引用的cookie名称
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+  const projectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1] || ''
+  
+  // Supabase v2 cookie格式: sb-<project-ref>-auth-token
+  const authTokenCookie = request.cookies.get(`sb-${projectRef}-auth-token`)?.value
+  const authTokenParts = request.cookies.get(`sb-${projectRef}-auth-token.0`)?.value
+  const authTokenParts1 = request.cookies.get(`sb-${projectRef}-auth-token.1`)?.value
   
   // 如果有任何形式的认证信息，认为用户已登录
-  const hasAuth = cookieToken || bearerToken || accessToken || refreshToken
+  const hasAuth = !!(bearerToken || authTokenCookie || authTokenParts || authTokenParts1)
+  
+  // Debug logging
+  if (pathname === '/recharge') {
+    console.log('Middleware - Recharge page auth check:', {
+      pathname,
+      projectRef,
+      hasAuth,
+      bearerToken: !!bearerToken,
+      authTokenCookie: !!authTokenCookie,
+      authTokenParts: !!authTokenParts,
+      authTokenParts1: !!authTokenParts1,
+      cookies: request.cookies.getAll().map(c => c.name)
+    })
+  }
 
-  // 需要认证的路由（移除/generations，让客户端处理）
+  // 需要认证的路由（移除/generations和/recharge，让客户端处理）
   const protectedRoutes = [
     '/profile',
-    '/recharge',
     '/admin',
     '/redeem'
   ]
@@ -65,7 +83,7 @@ export function middleware(request: NextRequest) {
   }
 
   // 管理员路由需要额外验证（这里简化处理，实际应该验证JWT中的admin字段）
-  if (isAdminRoute && token) {
+  if (isAdminRoute && hasAuth) {
     // 这里应该解析JWT验证admin权限，为了简化暂时跳过
     // 在实际应用中，您需要验证JWT中的admin字段
   }
