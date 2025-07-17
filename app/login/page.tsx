@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { ArrowLeft, Mail, Lock, Sparkles, Zap, Users, Palette } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
+import { migrateGuestDataToUser, getGuestImages } from '@/lib/guest-trial'
 
 function LoginPageContent() {
   const [email, setEmail] = useState('')
@@ -38,16 +39,28 @@ function LoginPageContent() {
         // 登录成功，保存 userId 到 localStorage
         localStorage.setItem('userId', data.user.id)
         
+        // 检查并迁移游客数据
+        const guestImages = getGuestImages()
+        if (guestImages.length > 0) {
+          console.log('检测到游客数据，开始迁移...')
+          await migrateGuestDataToUser(data.user.id)
+          toast.success('登录成功', {
+            description: '已自动恢复您的试用作品'
+          })
+        } else {
+          toast.success('登录成功', {
+            description: '正在跳转...'
+          })
+        }
+        
         // 确保会话已经建立
         const { data: { session } } = await supabase.auth.getSession()
         console.log('登录成功，会话状态:', session?.user?.email)
         
-        toast.success('登录成功', {
-          description: '正在跳转...'
-        })
-        
         // 使用 window.location 确保页面完全刷新，避免认证状态不同步
-        window.location.href = redirect
+        setTimeout(() => {
+          window.location.href = redirect
+        }, 1000)
       }
     } catch (err) {
       console.error('登录错误:', err)
@@ -128,7 +141,7 @@ function LoginPageContent() {
                 <div className="flex justify-center space-x-4">
                   <Badge variant="secondary" className="px-3 py-1">
                     <Sparkles className="h-3 w-3 mr-1" />
-                    新用户30积分
+                    新用户50积分
                   </Badge>
                   <Badge variant="secondary" className="px-3 py-1">
                     <Zap className="h-3 w-3 mr-1" />

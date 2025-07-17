@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { HistoryIcon, PlusCircle } from "lucide-react"
+import { HistoryIcon, PlusCircle, Gift, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { supabase } from "@/lib/supabase"
+import { getGuestTrialStatus } from "@/lib/guest-trial"
 
 export default function CreditBalance() {
   const router = useRouter()
@@ -14,11 +15,38 @@ export default function CreditBalance() {
   const [credits, setCredits] = useState(0)
   const [history, setHistory] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [isGuest, setIsGuest] = useState(false)
+  const [guestTrialUsed, setGuestTrialUsed] = useState(false)
 
-  // 只在客户端获取 userId
+  // 只在客户端获取 userId 和检查游客状态
   useEffect(() => {
-    const id = typeof window !== 'undefined' ? localStorage.getItem('userId') : null
-    setUserId(id)
+    const checkUserStatus = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        setUserId(user.id);
+        setIsGuest(false);
+      } else {
+        setIsGuest(true);
+        const trialStatus = getGuestTrialStatus();
+        setGuestTrialUsed(trialStatus.hasUsedTrial);
+        setLoading(false);
+      }
+    };
+    
+    checkUserStatus();
+    
+    // 监听游客试用状态变化
+    const handleTrialUsed = () => {
+      const trialStatus = getGuestTrialStatus();
+      setGuestTrialUsed(trialStatus.hasUsedTrial);
+    };
+    
+    window.addEventListener('guestTrialUsed', handleTrialUsed);
+    
+    return () => {
+      window.removeEventListener('guestTrialUsed', handleTrialUsed);
+    };
   }, [])
 
   // 获取积分余额
@@ -68,6 +96,59 @@ export default function CreditBalance() {
     fetchCredits(userId)
     fetchHistory(userId)
   }, [userId])
+
+  // 游客模式显示
+  if (isGuest) {
+    return (
+      <div className="space-y-6">
+        {/* Guest Trial Display */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-pink-500 via-purple-500 to-indigo-500 p-6 text-white">
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-sm font-medium text-pink-100 flex items-center gap-2">
+                  <Gift className="w-4 h-4" />
+                  免费试用
+                </h3>
+                <div className="flex items-baseline space-x-2">
+                  <p className="text-3xl font-bold">{guestTrialUsed ? '0' : '1'}</p>
+                  <span className="text-pink-200 text-sm">次机会</span>
+                </div>
+              </div>
+              <Sparkles className="w-8 h-8 text-yellow-300 animate-pulse" />
+            </div>
+            
+            <div className="text-xs text-pink-100 space-y-1">
+              {guestTrialUsed ? (
+                <>
+                  <p>• 您的免费试用已使用</p>
+                  <p>• 注册账号获得50积分！</p>
+                </>
+              ) : (
+                <>
+                  <p>• 无需注册，立即试用</p>
+                  <p>• 体验AI图片生成的魔力</p>
+                </>
+              )}
+            </div>
+          </div>
+          
+          {/* Background decoration */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-12 -translate-x-12"></div>
+        </div>
+
+        {/* Register Button */}
+        <Button 
+          className="w-full h-12 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105" 
+          onClick={() => router.push('/register')}
+        >
+          <Gift className="h-5 w-5 mr-2" />
+          注册获得50积分
+        </Button>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">

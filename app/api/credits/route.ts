@@ -34,7 +34,7 @@ export async function GET(request: Request) {
       if (error.code === 'PGRST116') {
         const { data: newUser, error: createError } = await supabaseServer
           .from('user_credits')
-          .insert({ user_id: userId, credits: 30 })
+          .insert({ user_id: userId, credits: 50 })
           .select()
           .single()
 
@@ -43,7 +43,7 @@ export async function GET(request: Request) {
           return NextResponse.json({ error: '创建用户失败' }, { status: 500 })
         }
 
-        return NextResponse.json({ credits: newUser?.credits || 30 })
+        return NextResponse.json({ credits: newUser?.credits || 50 })
       }
 
       console.error('获取积分失败:', error)

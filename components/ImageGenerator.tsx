@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Download } from 'lucide-react';
 import { toast } from 'sonner';
 import Image from 'next/image';
@@ -8,6 +9,8 @@ import { supabase } from '@/lib/supabase';
 import { CuteButton, CuteCard, CuteInput, CuteBadge } from './CuteUIComponents';
 import { CuteLoadingWithProgress, CuteSuccessAnimation } from './CuteLoadingComponents';
 import { CelebrationAnimation } from './CuteCelebrationComponents';
+import { TrialToRegisterModal } from './TrialToRegisterModal';
+import { getGuestTrialStatus, setGuestTrialUsed as markGuestTrialUsed, saveGuestImage } from '@/lib/guest-trial';
 
 interface ImageGeneratorProps {
   initialPrompt?: string;
@@ -47,12 +50,16 @@ const imageStyles = [
 ];
 
 export function ImageGenerator({ initialPrompt }: ImageGeneratorProps) {
+  const router = useRouter();
   const [prompt, setPrompt] = useState(initialPrompt || '');
   const [imageUrl, setImageUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [selectedStyle, setSelectedStyle] = useState('natural');
   const [progress, setProgress] = useState(0);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [guestTrialUsed, setGuestTrialUsed] = useState(false);
 
   useEffect(() => {
     if (initialPrompt) {
@@ -60,12 +67,49 @@ export function ImageGenerator({ initialPrompt }: ImageGeneratorProps) {
     }
   }, [initialPrompt]);
 
+  // 检查认证状态和游客试用状态
+  useEffect(() => {
+    const checkAuthAndTrial = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setIsAuthenticated(!!user);
+      
+      if (!user) {
+        const trialStatus = getGuestTrialStatus();
+        setGuestTrialUsed(trialStatus.hasUsedTrial);
+      }
+    };
+    
+    checkAuthAndTrial();
+    
+    // 监听游客试用状态变化
+    const handleTrialUsed = () => {
+      if (!isAuthenticated) {
+        const trialStatus = getGuestTrialStatus();
+        setGuestTrialUsed(trialStatus.hasUsedTrial);
+      }
+    };
+    
+    window.addEventListener('guestTrialUsed', handleTrialUsed);
+    
+    return () => {
+      window.removeEventListener('guestTrialUsed', handleTrialUsed);
+    };
+  }, [isAuthenticated]);
+
   const checkCredits = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      console.log('未登录');
-      toast.error('请先登录');
-      return false;
+      // 游客模式：检查是否还有试用机会
+      const trialStatus = getGuestTrialStatus();
+      if (!trialStatus.hasUsedTrial) {
+        return 'guest'; // 返回游客模式
+      } else {
+        toast.error('您的免费试用已用完，请注册账号继续使用', {
+          description: '注册即送50积分，可生成5张图片'
+        });
+        // 不再自动弹出注册窗口，让用户自己选择
+        return false;
+      }
     }
     
     // 恢复积分校验
@@ -90,8 +134,11 @@ export function ImageGenerator({ initialPrompt }: ImageGeneratorProps) {
   };
 
   const generateImage = async () => {
-    const enough = await checkCredits();
-    if (!enough) return;
+    const creditStatus = await checkCredits();
+    if (!creditStatus) return;
+    
+    const isGuest = creditStatus === 'guest';
+    
     try {
       setLoading(true);
       setImageUrl('');
@@ -109,26 +156,42 @@ export function ImageGenerator({ initialPrompt }: ImageGeneratorProps) {
         });
       }, 500);
       
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast.error('请先登录');
-        return;
+      let response;
+      
+      if (isGuest) {
+        // 游客模式：调用游客API
+        console.log('游客模式调用API，参数:', { prompt, style: selectedStyle, isGuest: true });
+        response = await fetch('/api/generate-image', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            prompt, 
+            style: selectedStyle,
+            isGuest: true
+          }),
+        });
+      } else {
+        // 注册用户模式
+        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        response = await fetch('/api/generate-image', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token}`,
+          },
+          body: JSON.stringify({ 
+            prompt, 
+            userId: user!.id,
+            style: selectedStyle 
+          }),
+        });
       }
-      const { data: { session } } = await supabase.auth.getSession();
-      const response = await fetch('/api/generate-image', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`,
-        },
-        body: JSON.stringify({ 
-          prompt, 
-          userId: user.id,
-          style: selectedStyle 
-        }),
-      });
 
       const data = await response.json();
+      console.log('API响应:', { status: response.status, data });
 
       if (!response.ok) {
         // 处理不同类型的错误
@@ -205,7 +268,25 @@ export function ImageGenerator({ initialPrompt }: ImageGeneratorProps) {
       setImageUrl(data.imageUrl);
       setProgress(100);
       setShowSuccess(true);
-      toast.success('图片生成成功！');
+      
+      if (isGuest) {
+        // 游客模式：保存试用记录并显示注册引导
+        markGuestTrialUsed({ url: data.imageUrl, prompt, style: selectedStyle });
+        saveGuestImage({ url: data.imageUrl, prompt, style: selectedStyle });
+        
+        // 更新本地组件状态，防止再次试用
+        setGuestTrialUsed(true);
+        
+        // 触发页面刷新以更新所有组件的状态
+        window.dispatchEvent(new Event('guestTrialUsed'));
+        
+        toast.success('图片生成成功！这是你的免费试用作品');
+        setTimeout(() => {
+          setShowRegisterModal(true);
+        }, 2000);
+      } else {
+        toast.success('图片生成成功！');
+      }
       
       // 3秒后隐藏成功动画
       setTimeout(() => setShowSuccess(false), 3000);
@@ -221,6 +302,26 @@ export function ImageGenerator({ initialPrompt }: ImageGeneratorProps) {
 
   const handleDownload = () => {
     if (!imageUrl) return;
+    
+    // 检查是否是游客且未注册
+    if (!isAuthenticated) {
+      // 检查是否已经显示过注册弹窗（本次会话）
+      const hasShownRegisterModal = sessionStorage.getItem('hasShownRegisterModal');
+      
+      toast.error('请先注册账号才能下载高清原图', {
+        description: '注册即送50积分，可生成5张图片'
+      });
+      
+      // 如果还没显示过弹窗，则显示
+      if (!hasShownRegisterModal) {
+        setShowRegisterModal(true);
+        sessionStorage.setItem('hasShownRegisterModal', 'true');
+      } else {
+        // 如果已经显示过，直接跳转到注册页
+        router.push('/register?fromDownload=true');
+      }
+      return;
+    }
 
     const link = document.createElement('a');
     link.href = imageUrl;
@@ -363,8 +464,21 @@ export function ImageGenerator({ initialPrompt }: ImageGeneratorProps) {
         loading={loading}
         className="w-full"
       >
-        {loading ? 'AI正在创作中...' : '✨ 开始创作魔法图片 🎨'}
+        {loading ? 'AI正在创作中...' : 
+          (!isAuthenticated && !guestTrialUsed) ? '✨ 免费试用一次 🎁' : '✨ 开始创作魔法图片 🎨'}
       </CuteButton>
+      
+      {/* 游客提示 */}
+      {!isAuthenticated && !guestTrialUsed && (
+        <div className="text-center space-y-2">
+          <p className="text-sm text-pink-600 font-medium">
+            🎁 无需注册，立即免费试用一次！
+          </p>
+          <p className="text-xs text-gray-500">
+            生成后可注册保存作品，还送50积分
+          </p>
+        </div>
+      )}
       
       {/* Loading Animation */}
       {loading && (
@@ -399,10 +513,19 @@ export function ImageGenerator({ initialPrompt }: ImageGeneratorProps) {
             icon={<Download className="w-5 h-5" />}
             className="w-full"
           >
-            下载可爱图片 💕
+            {isAuthenticated ? '下载可爱图片 💕' : '注册后下载高清原图 🔒'}
           </CuteButton>
         </div>
       )}
+      
+      {/* 注册引导弹窗 */}
+      <TrialToRegisterModal
+        isOpen={showRegisterModal}
+        onClose={() => setShowRegisterModal(false)}
+        imageUrl={imageUrl}
+        prompt={prompt}
+        style={selectedStyle}
+      />
     </div>
   );
 } 
