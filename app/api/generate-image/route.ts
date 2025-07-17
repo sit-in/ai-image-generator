@@ -5,6 +5,7 @@ import { saveImageToStorage } from '@/lib/storage';
 import { rateLimiters, createRateLimitResponse } from '@/lib/rate-limiter';
 import { schemas, validateInput, sanitizeInput, containsSensitiveWords, logSecurityEvent } from '@/lib/security';
 import Replicate from "replicate";
+import { PromptOptimizer } from '@/lib/prompt-optimizer';
 
 export async function POST(request: Request) {
   try {
@@ -122,62 +123,18 @@ export async function POST(request: Request) {
       auth: process.env.REPLICATE_API_TOKEN,
     });
 
-    // 构建精确的提示词 - 重点关注用户原始输入的准确性
-    let cleanPrompt = sanitizedPrompt;
+    // 使用提示词优化器处理中英文混合输入
+    const { optimizedPrompt, translatedPrompt, suggestions } = PromptOptimizer.optimize(sanitizedPrompt, style);
     
-    // 检查是否是中文输入，如果是，可以考虑翻译或使用英文关键词
-    const chinesePattern = /[\u4e00-\u9fff]/;
-    const isChinese = chinesePattern.test(cleanPrompt);
-    
-    // 如果包含中文，保持原样，但在前面加上英文描述以提高准确性
-    if (isChinese) {
-      // 对常见中文词汇做简单映射
-      const chineseToEnglish: { [key: string]: string } = {
-        '美女': 'beautiful woman',
-        '帅哥': 'handsome man', 
-        '女孩': 'girl',
-        '男孩': 'boy',
-        '猫': 'cat',
-        '狗': 'dog',
-        '花': 'flower',
-        '山': 'mountain',
-        '海': 'ocean',
-        '城市': 'city',
-        '森林': 'forest'
-      };
-      
-      // 尝试找到中文关键词的英文对应
-      let englishEquivalent = '';
-      for (const [chinese, english] of Object.entries(chineseToEnglish)) {
-        if (cleanPrompt.includes(chinese)) {
-          englishEquivalent = english;
-          break;
-        }
-      }
-      
-      // 如果找到对应的英文，使用英文作为主要描述
-      if (englishEquivalent) {
-        cleanPrompt = `${englishEquivalent}, ${cleanPrompt}`;
-      }
-    }
-    
-    // 风格映射 - 将风格描述放在最前面
-    const styleDescriptions = {
-      'anime': 'anime style',
-      'oil': 'oil painting style',  
-      'watercolor': 'watercolor painting style',
-      'pixel': 'pixel art style',
-      'ghibli': 'Studio Ghibli style',
-      'natural': 'realistic style'
-    };
-    
-    const styleDesc = styleDescriptions[style as keyof typeof styleDescriptions] || styleDescriptions.natural;
-    let styledPrompt = `${styleDesc}, ${cleanPrompt}, high quality`;
+    // 使用优化后的提示词
+    let styledPrompt = optimizedPrompt;
 
     // 调试日志 - 打印实际发送的提示词
     console.log('原始提示词:', prompt);
+    console.log('翻译后提示词:', translatedPrompt);
     console.log('风格:', style);
-    console.log('最终提示词:', styledPrompt);
+    console.log('最终优化提示词:', styledPrompt);
+    console.log('优化建议:', suggestions);
 
     const input = { prompt: styledPrompt };
     // Replicate 只接受 'owner/model' 或 'owner/model:version' 形式

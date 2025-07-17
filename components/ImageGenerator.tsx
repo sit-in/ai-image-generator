@@ -11,6 +11,7 @@ import { CuteLoadingWithProgress, CuteSuccessAnimation } from './CuteLoadingComp
 import { CelebrationAnimation } from './CuteCelebrationComponents';
 import { TrialToRegisterModal } from './TrialToRegisterModal';
 import { getGuestTrialStatus, setGuestTrialUsed as markGuestTrialUsed, saveGuestImage } from '@/lib/guest-trial';
+import { PromptOptimizer } from '@/lib/prompt-optimizer';
 
 interface ImageGeneratorProps {
   initialPrompt?: string;
@@ -401,55 +402,32 @@ export function ImageGenerator({ initialPrompt }: ImageGeneratorProps) {
             <span>试试描述一些可爱的场景，比如"粉色的云朵"、"彩虹独角兽"等～</span>
           </div>
           {prompt && (
-            <div className="text-xs text-blue-600 bg-blue-50 p-3 rounded-2xl border border-blue-200">
-              <span className="font-medium">🤖 AI会这样理解你的描述:</span> 
-              <br />
-              <span className="font-mono text-xs bg-white px-2 py-1 rounded-full mt-2 inline-block">
-                {(() => {
-                  const chineseToEnglish: { [key: string]: string } = {
-                    '美女': 'beautiful woman',
-                    '帅哥': 'handsome man', 
-                    '女孩': 'girl',
-                    '男孩': 'boy',
-                    '猫': 'cat',
-                    '狗': 'dog',
-                    '花': 'flower',
-                    '山': 'mountain',
-                    '海': 'ocean',
-                    '城市': 'city',
-                    '森林': 'forest'
-                  };
-                  
-                  let processedPrompt = prompt.trim();
-                  const chinesePattern = /[\u4e00-\u9fff]/;
-                  const isChinese = chinesePattern.test(processedPrompt);
-                  
-                  if (isChinese) {
-                    let englishEquivalent = '';
-                    for (const [chinese, english] of Object.entries(chineseToEnglish)) {
-                      if (processedPrompt.includes(chinese)) {
-                        englishEquivalent = english;
-                        break;
-                      }
-                    }
-                    if (englishEquivalent) {
-                      processedPrompt = `${englishEquivalent}, ${processedPrompt}`;
-                    }
-                  }
-                  
-                  const styleDescriptions = {
-                    'anime': 'anime style',
-                    'oil': 'oil painting style',  
-                    'watercolor': 'watercolor painting style',
-                    'pixel': 'pixel art style',
-                    'ghibli': 'Studio Ghibli style',
-                    'natural': 'realistic style'
-                  };
-                  
-                  const styleDesc = styleDescriptions[selectedStyle as keyof typeof styleDescriptions] || styleDescriptions.natural;
-                  return `${styleDesc}, ${processedPrompt}, high quality`;
-                })()}
-              </span>
+            <div className="space-y-2">
+              <div className="text-xs text-blue-600 bg-blue-50 p-3 rounded-2xl border border-blue-200">
+                <span className="font-medium">🤖 AI优化后的提示词:</span> 
+                <br />
+                <span className="font-mono text-xs bg-white px-2 py-1 rounded-full mt-2 inline-block">
+                  {(() => {
+                    const { optimizedPrompt, translatedPrompt } = PromptOptimizer.optimize(prompt, selectedStyle);
+                    return optimizedPrompt;
+                  })()}
+                </span>
+              </div>
+              
+              {/* 显示优化建议 */}
+              {(() => {
+                const { suggestions } = PromptOptimizer.optimize(prompt, selectedStyle);
+                return suggestions.length > 0 && (
+                  <div className="text-xs text-purple-600 bg-purple-50 p-3 rounded-2xl border border-purple-200">
+                    <span className="font-medium">💡 优化建议:</span>
+                    <ul className="mt-1 space-y-1">
+                      {suggestions.map((suggestion, index) => (
+                        <li key={index} className="ml-4">• {suggestion}</li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })()}
             </div>
           )}
         </div>
