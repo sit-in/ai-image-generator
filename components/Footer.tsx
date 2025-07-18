@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { BeianInfo } from './BeianInfo';
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -89,6 +90,9 @@ export function Footer() {
             </Link>
           </p>
         </div>
+        
+        {/* 备案信息 */}
+        <BeianInfo />
       </div>
     </footer>
   );

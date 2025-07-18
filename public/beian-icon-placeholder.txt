@@ -1,0 +1,9 @@
+请从以下地址下载公安备案图标：
+http://www.beian.gov.cn/portal/download
+
+下载后将图标重命名为 beian-icon.png 并放置在此目录下。
+
+图标规格：
+- 格式：PNG
+- 尺寸：20x20 像素
+- 背景：透明
