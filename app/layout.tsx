@@ -4,6 +4,7 @@ import './globals.css'
 import './globals-design-system.css'
 import { Toaster } from 'sonner'
 import Navigation from '@/components/navigation'
+import { Footer } from '@/components/Footer'
 import { StyleProvider } from './providers'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -22,8 +23,13 @@ export default function RootLayout({
     <html lang="zh">
       <body className={inter.className}>
         <StyleProvider>
-          <Navigation />
-          {children}
+          <div className="min-h-screen flex flex-col">
+            <Navigation />
+            <main className="flex-grow">
+              {children}
+            </main>
+            <Footer />
+          </div>
           <Toaster position="top-center" richColors />
         </StyleProvider>
       </body>

@@ -15,6 +15,7 @@ import { migrateGuestDataToUser } from '@/lib/guest-trial'
 function RegisterContent() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [agreedToTerms, setAgreedToTerms] = useState(false)
   const [loading, setLoading] = useState(false)
   const [isFromTrial, setIsFromTrial] = useState(false)
   const router = useRouter()
@@ -28,6 +29,12 @@ function RegisterContent() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    if (!agreedToTerms) {
+      toast.error('请先同意用户协议和隐私政策')
+      return
+    }
+    
     setLoading(true)
     
     try {
@@ -226,8 +233,30 @@ function RegisterContent() {
                     </div>
                   </div>
 
-                  <div className="text-xs text-muted-foreground text-center">
-                    注册即表示您同意我们的服务条款和隐私政策
+                  <div className="space-y-4">
+                    <div className="flex items-start space-x-2">
+                      <input
+                        type="checkbox"
+                        id="terms"
+                        checked={agreedToTerms}
+                        onChange={(e) => setAgreedToTerms(e.target.checked)}
+                        className="mt-1 h-4 w-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                      />
+                      <label htmlFor="terms" className="text-sm text-gray-600">
+                        我已阅读并同意
+                        <Link href="/agreement" className="text-purple-600 hover:underline mx-1" target="_blank">
+                          用户协议
+                        </Link>
+                        、
+                        <Link href="/terms" className="text-purple-600 hover:underline mx-1" target="_blank">
+                          服务条款
+                        </Link>
+                        和
+                        <Link href="/privacy" className="text-purple-600 hover:underline mx-1" target="_blank">
+                          隐私政策
+                        </Link>
+                      </label>
+                    </div>
                   </div>
 
                   <Button 
