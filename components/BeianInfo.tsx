@@ -11,7 +11,7 @@ export function BeianInfo() {
           className="hover:text-gray-700"
         >
           {/* 请替换为实际的ICP备案号 */}
-          京ICP备2024000001号-1
+          蜀ICP备14006373号-2
         </Link>
       </p>
       <p>

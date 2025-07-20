@@ -12,6 +12,7 @@ import { CelebrationAnimation } from './CuteCelebrationComponents';
 import { TrialToRegisterModal } from './TrialToRegisterModal';
 import { getGuestTrialStatus, setGuestTrialUsed as markGuestTrialUsed, saveGuestImage } from '@/lib/guest-trial';
 import { PromptOptimizer } from '@/lib/prompt-optimizer';
+import { ImageSkeleton } from '@/components/ui/image-skeleton';
 
 interface ImageGeneratorProps {
   initialPrompt?: string;
@@ -61,6 +62,8 @@ export function ImageGenerator({ initialPrompt }: ImageGeneratorProps) {
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [guestTrialUsed, setGuestTrialUsed] = useState(false);
+  const [queuePosition, setQueuePosition] = useState<number | undefined>(undefined);
+  const [generationStatus, setGenerationStatus] = useState<'pending' | 'processing' | 'completed' | 'failed'>('processing');
 
   useEffect(() => {
     if (initialPrompt) {
@@ -145,15 +148,25 @@ export function ImageGenerator({ initialPrompt }: ImageGeneratorProps) {
       setImageUrl('');
       setProgress(0);
       setShowSuccess(false);
+      setGenerationStatus('pending');
+      setQueuePosition(Math.floor(Math.random() * 3) + 1); // 模拟排队人数
       
       // 模拟进度
       const progressInterval = setInterval(() => {
         setProgress(prev => {
-          if (prev >= 90) {
+          const newProgress = prev + Math.random() * 15;
+          
+          // 更新状态
+          if (newProgress > 5) {
+            setGenerationStatus('processing');
+            setQueuePosition(undefined);
+          }
+          
+          if (newProgress >= 90) {
             clearInterval(progressInterval);
             return 90;
           }
-          return prev + Math.random() * 15;
+          return newProgress;
         });
       }, 500);
       
@@ -268,6 +281,7 @@ export function ImageGenerator({ initialPrompt }: ImageGeneratorProps) {
 
       setImageUrl(data.imageUrl);
       setProgress(100);
+      setGenerationStatus('completed');
       setShowSuccess(true);
       
       if (isGuest) {
@@ -292,6 +306,7 @@ export function ImageGenerator({ initialPrompt }: ImageGeneratorProps) {
       // 3秒后隐藏成功动画
       setTimeout(() => setShowSuccess(false), 3000);
     } catch (err) {
+      setGenerationStatus('failed');
       const errorMessage = err instanceof Error ? err.message : '生成图片时发生错误';
       toast.error(errorMessage);
       console.error('Error details:', err);
@@ -458,15 +473,19 @@ export function ImageGenerator({ initialPrompt }: ImageGeneratorProps) {
         </div>
       )}
       
-      {/* Loading Animation */}
+      {/* Loading Animation with Skeleton */}
       {loading && (
         <div className="mt-8">
-          <CuteLoadingWithProgress progress={progress} />
+          <ImageSkeleton 
+            progress={progress} 
+            queuePosition={queuePosition}
+            status={generationStatus}
+          />
         </div>
       )}
 
       {/* Generated Image */}
-      {imageUrl && (
+      {imageUrl && !loading && (
         <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
           <h3 className="text-2xl font-bold text-center text-gray-800">
             🎉 你的专属AI作品完成啦！

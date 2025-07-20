@@ -1,0 +1,135 @@
+{
+  "navigation": {
+    "home": "Home",
+    "generate": "Create",
+    "history": "History",
+    "batch": "Batch",
+    "login": "Login",
+    "register": "Register",
+    "logout": "Logout",
+    "credits": "My Credits"
+  },
+  "home": {
+    "title": "AI Image Generator",
+    "subtitle": "Explore infinite creativity, let AI draw your dreams",
+    "features": {
+      "fast": "Lightning Fast",
+      "safe": "Safe & Secure",
+      "available": "24/7 Service"
+    },
+    "cta": {
+      "title": "Start Creating Your First Artwork",
+      "subtitle": "Choose from examples below or create your unique piece",
+      "createNow": "Create Now",
+      "loginForCredits": "Login for Credits"
+    },
+    "gallery": {
+      "title": "Gallery",
+      "subtitle": "Click any artwork to reuse the prompt for similar styles",
+      "viewMore": "View More"
+    },
+    "features": {
+      "styles": {
+        "title": "Diverse Styles",
+        "description": "Supports anime, oil painting, watercolor and more"
+      },
+      "speed": {
+        "title": "Super Fast",
+        "description": "Generate high-quality images in just 10 seconds"
+      },
+      "pricing": {
+        "title": "Flexible Pricing",
+        "description": "Pay as you go, new users get free credits"
+      }
+    }
+  },
+  "generate": {
+    "title": "Start Creating",
+    "subtitle": "Turn your ideas into beautiful images",
+    "tabs": {
+      "single": "Single",
+      "batch": "Batch"
+    },
+    "styles": {
+      "title": "Choose Your Style",
+      "natural": {
+        "name": "Natural",
+        "description": "Real-world photographic style, perfect for realistic scenes."
+      },
+      "anime": {
+        "name": "Anime",
+        "description": "Japanese anime style with vibrant colors and clear lines."
+      },
+      "oil": {
+        "name": "Oil Painting",
+        "description": "Oil painting texture with thick brushstrokes and artistic feel."
+      },
+      "watercolor": {
+        "name": "Watercolor",
+        "description": "Watercolor painting with soft colors and blended edges."
+      },
+      "pixel": {
+        "name": "Pixel Art",
+        "description": "Pixel art style with retro game aesthetics."
+      },
+      "ghibli": {
+        "name": "Studio Ghibli",
+        "description": "Ghibli animation style, warm and delicate with fairy-tale charm."
+      }
+    },
+    "prompt": {
+      "title": "Describe Your Idea",
+      "placeholder": "e.g., Mount Fuji at sunset, cherry blossoms falling, serene lake reflecting the sky",
+      "optimizedPrompt": "AI Optimized Prompt",
+      "suggestions": "Optimization Suggestions"
+    },
+    "button": {
+      "generating": "AI is creating...",
+      "generate": "Create Magic Image",
+      "freeTrial": "Free Trial"
+    },
+    "guest": {
+      "hint": "No registration needed, try once for free!",
+      "saveHint": "Register after generation to save your work and get 50 credits"
+    },
+    "result": {
+      "title": "Your AI Artwork is Ready!",
+      "download": "Download Original",
+      "reusePrompt": "Reuse Prompt",
+      "shareHint": "Share your creation"
+    },
+    "credits": {
+      "title": "My Credits",
+      "quickRecharge": "Quick Recharge:",
+      "credits": "Credits",
+      "moreOptions": "More Options",
+      "taobaoHint": "Taobao QR Payment Supported"
+    },
+    "guide": {
+      "title": "How to Use",
+      "step1": {
+        "title": "Choose Mode",
+        "description": "Single or batch generation"
+      },
+      "step2": {
+        "title": "Describe Your Idea",
+        "description": "The more detailed, the better"
+      },
+      "step3": {
+        "title": "Generate Image",
+        "description": "10 credits per image"
+      }
+    },
+    "tips": {
+      "title": "Pro Tips",
+      "batchDiscount": "Batch generation saves more! 3 images for 27 credits, 5 for 42.5 credits!"
+    }
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "success": "Success",
+    "madeWith": "Made with",
+    "by": "by AI Team"
+  }
+}

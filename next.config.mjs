@@ -21,7 +21,7 @@ const nextConfig = {
   },
   images: {
     unoptimized: true,
-    domains: ['localhost', '*.supabase.co', 'replicate.delivery'],
+    domains: ['localhost', '*.supabase.co', 'replicate.delivery', 'images.unsplash.com'],
     remotePatterns: [
       {
         protocol: 'https',
@@ -32,6 +32,18 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'replicate.delivery',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'oaidalleapiprodscus.blob.core.windows.net',
         port: '',
         pathname: '/**',
       },

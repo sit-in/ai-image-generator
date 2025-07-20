@@ -69,15 +69,26 @@ export default function Navigation() {
               </Button>
             </>
           ) : (
-            <Link href="/login">
-              <Button 
-                variant="default" 
-                className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
-              >
-                <User className="h-4 w-4" />
-                <span className="hidden sm:inline">登录</span>
-              </Button>
-            </Link>
+            <>
+              <Link href="/register">
+                <Button 
+                  variant="outline" 
+                  className="flex items-center gap-2 border-purple-600 text-purple-600 hover:bg-purple-50 transition-all duration-300"
+                >
+                  <User className="h-4 w-4" />
+                  <span>注册</span>
+                </Button>
+              </Link>
+              <Link href="/login">
+                <Button 
+                  variant="default" 
+                  className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span>登录</span>
+                </Button>
+              </Link>
+            </>
           )}
         </div>
       </div>

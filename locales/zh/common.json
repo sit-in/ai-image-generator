@@ -1,0 +1,135 @@
+{
+  "navigation": {
+    "home": "首页",
+    "generate": "创作",
+    "history": "生成历史",
+    "batch": "批量管理",
+    "login": "登录",
+    "register": "注册",
+    "logout": "退出",
+    "credits": "我的积分"
+  },
+  "home": {
+    "title": "AI 画画小助手",
+    "subtitle": "探索无限创意，让 AI 为你绘制梦想",
+    "features": {
+      "fast": "超快生成",
+      "safe": "安全可靠",
+      "available": "24小时服务"
+    },
+    "cta": {
+      "title": "开始创作你的第一幅作品",
+      "subtitle": "选择下方示例开始，或直接创建你的独特作品",
+      "createNow": "立即创作",
+      "loginForCredits": "登录获取积分"
+    },
+    "gallery": {
+      "title": "作品展示",
+      "subtitle": "点击任意作品，即可复用 Prompt 创作相似风格",
+      "viewMore": "查看更多作品"
+    },
+    "features": {
+      "styles": {
+        "title": "多样风格",
+        "description": "支持动漫、油画、水彩等多种艺术风格"
+      },
+      "speed": {
+        "title": "极速生成",
+        "description": "最快10秒生成高质量图片"
+      },
+      "pricing": {
+        "title": "灵活计费",
+        "description": "按需付费，新用户赠送免费积分"
+      }
+    }
+  },
+  "generate": {
+    "title": "开始创作",
+    "subtitle": "把你的奇思妙想变成可爱的图片～",
+    "tabs": {
+      "single": "单张生成",
+      "batch": "批量生成"
+    },
+    "styles": {
+      "title": "选择你喜欢的风格",
+      "natural": {
+        "name": "自然风格",
+        "description": "真实世界的自然照片风格，适合写实场景。"
+      },
+      "anime": {
+        "name": "动漫风格",
+        "description": "日系动漫、二次元风格，色彩鲜明，线条清晰。"
+      },
+      "oil": {
+        "name": "油画风格",
+        "description": "仿油画质感，厚重笔触，艺术感强。"
+      },
+      "watercolor": {
+        "name": "水彩风格",
+        "description": "水彩画质感，色彩柔和，边缘晕染。"
+      },
+      "pixel": {
+        "name": "像素风格",
+        "description": "像素艺术风格，复古游戏画面效果。"
+      },
+      "ghibli": {
+        "name": "吉卜力风格",
+        "description": "宫崎骏动画风格，温暖细腻，充满童话感。"
+      }
+    },
+    "prompt": {
+      "title": "描述你的创意",
+      "placeholder": "例如：夕阳下的富士山，樱花飘落，宁静的湖面倒映着天空",
+      "optimizedPrompt": "AI优化后的提示词",
+      "suggestions": "优化建议"
+    },
+    "button": {
+      "generating": "AI正在创作中...",
+      "generate": "开始创作魔法图片",
+      "freeTrial": "免费试用一次"
+    },
+    "guest": {
+      "hint": "无需注册，立即免费试用一次！",
+      "saveHint": "生成后可注册保存作品，还送50积分"
+    },
+    "result": {
+      "title": "你的专属AI作品完成啦！",
+      "download": "下载原图",
+      "reusePrompt": "复用提示词",
+      "shareHint": "分享你的作品"
+    },
+    "credits": {
+      "title": "我的积分",
+      "quickRecharge": "快速充值：",
+      "credits": "积分",
+      "moreOptions": "更多充值选项",
+      "taobaoHint": "支持淘宝扫码支付"
+    },
+    "guide": {
+      "title": "使用指南",
+      "step1": {
+        "title": "选择模式",
+        "description": "单张或批量生成"
+      },
+      "step2": {
+        "title": "描述创意",
+        "description": "越详细越好"
+      },
+      "step3": {
+        "title": "生成图片",
+        "description": "单张10积分"
+      }
+    },
+    "tips": {
+      "title": "小贴士",
+      "batchDiscount": "批量生成更划算！生成3张只需27积分，5张只需42.5积分哦～"
+    }
+  },
+  "common": {
+    "loading": "加载中...",
+    "error": "发生错误",
+    "success": "操作成功",
+    "madeWith": "Made with",
+    "by": "by AI Team"
+  }
+}

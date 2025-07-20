@@ -23,6 +23,7 @@ export class PromptOptimizer {
     '大象': 'elephant',
     '鸟': 'bird',
     '蝴蝶': 'butterfly',
+    '独角兽': 'unicorn',
     
     // 颜色
     '红色': 'red',
@@ -48,10 +49,38 @@ export class PromptOptimizer {
     '河流': 'river',
     '沙漠': 'desert',
     '雪山': 'snowy mountain',
+    '富士山': 'Mount Fuji',
+    '海滩': 'beach',
+    '湖泊': 'lake',
+    '瀑布': 'waterfall',
+    '草原': 'prairie',
+    '海边': 'seaside',
+    '湖面': 'lake surface',
+    '云端': 'clouds',
+    
+    // 时间
+    '夕阳': 'sunset',
+    '日出': 'sunrise',
+    '黄昏': 'dusk',
+    '黎明': 'dawn',
+    '夜晚': 'night',
+    '白天': 'daytime',
+    '春天': 'spring',
+    '夏天': 'summer',
+    '秋天': 'autumn',
+    '冬天': 'winter',
+    
+    // 天气
+    '晴天': 'sunny',
+    '雨天': 'rainy',
+    '雪天': 'snowy',
+    '多云': 'cloudy',
+    '暴风雨': 'stormy',
     
     // 物品
     '花': 'flower',
     '玫瑰': 'rose',
+    '樱花': 'cherry blossoms',
     '树': 'tree',
     '房子': 'house',
     '城堡': 'castle',
@@ -76,6 +105,9 @@ export class PromptOptimizer {
     '喝': 'drinking',
     '玩': 'playing',
     '睡觉': 'sleeping',
+    '飘落': 'falling',
+    '倒映': 'reflecting',
+    '绽放': 'blooming',
     
     // 形容词
     '可爱': 'cute',
@@ -90,6 +122,11 @@ export class PromptOptimizer {
     '矮': 'short',
     '胖': 'fat',
     '瘦': 'thin',
+    '宁静': 'serene',
+    '浪漫': 'romantic',
+    '壮观': 'spectacular',
+    '神秘': 'mysterious',
+    '和谐': 'harmonious',
     
     // 风格相关
     '卡通': 'cartoon',
@@ -106,7 +143,6 @@ export class PromptOptimizer {
     '很多': 'many',
     '几个': 'several',
     '在': 'in/at/on',
-    '的': "'s/of",
     '和': 'and',
     '或': 'or',
     '穿着': 'wearing',
@@ -193,6 +229,23 @@ export class PromptOptimizer {
    * 翻译中文词汇
    */
   private static translateChineseTerms(prompt: string): string {
+    // 特殊处理一些常见的中文句式
+    const commonPhrases: Record<string, string> = {
+      '夕阳下的富士山': 'Mount Fuji at sunset',
+      '樱花飘落的街道': 'street with falling cherry blossoms',
+      '月光下的湖面': 'lake surface under moonlight',
+      '雪山上的日出': 'sunrise over snowy mountains',
+      '彩虹下的瀑布': 'waterfall under rainbow',
+      '星空下的草原': 'prairie under starry sky',
+    };
+    
+    // 先检查是否匹配完整短语
+    for (const [chinese, english] of Object.entries(commonPhrases)) {
+      if (prompt.includes(chinese)) {
+        return prompt.replace(chinese, english);
+      }
+    }
+    
     let translated = prompt;
     
     // 按照词汇长度从长到短排序，避免短词覆盖长词
@@ -207,9 +260,59 @@ export class PromptOptimizer {
     // 清理多余空格
     translated = translated.replace(/\s+/g, ' ').trim();
     
-    // 如果还有中文字符，添加提示
+    // 处理一些常见的语法结构，但要避免破坏已翻译的短语
+    // 先保护已经正确翻译的词组
+    const protectedPhrases = [
+      'cherry blossoms',
+      'Mount Fuji',
+      'snowy mountain',
+      'beautiful woman',
+      'cute cat'
+    ];
+    
+    // 临时替换保护短语
+    const placeholders: Record<string, string> = {};
+    protectedPhrases.forEach((phrase, index) => {
+      const placeholder = `__PROTECTED_${index}__`;
+      placeholders[placeholder] = phrase;
+      translated = translated.replace(new RegExp(phrase, 'gi'), placeholder);
+    });
+    
+    // 只处理还包含中文的部分
     if (/[\u4e00-\u9fff]/.test(translated)) {
-      translated = `(Chinese: ${prompt}) ${translated}`;
+      // "X的Y" -> "Y of X" (只处理包含中文的情况)
+      translated = translated.replace(/([^\s]+)\s*的\s*([^\s]+)/g, (match, x, y) => {
+        if (/[\u4e00-\u9fff]/.test(match)) {
+          return `${y} of ${x}`;
+        }
+        return match;
+      });
+      
+      // 处理方位词
+      translated = translated.replace(/在\s*([^\s]+)/g, (match, place) => {
+        if (/[\u4e00-\u9fff]/.test(match)) {
+          return `at ${place}`;
+        }
+        return match;
+      });
+    }
+    
+    // 恢复保护的短语
+    Object.entries(placeholders).forEach(([placeholder, phrase]) => {
+      translated = translated.replace(new RegExp(placeholder, 'g'), phrase);
+    });
+    
+    // 再次清理多余空格
+    translated = translated.replace(/\s+/g, ' ').trim();
+    
+    // 如果还有大量中文字符未翻译，保留原文
+    const remainingChinese = (translated.match(/[\u4e00-\u9fff]/g) || []).length;
+    const originalChinese = (prompt.match(/[\u4e00-\u9fff]/g) || []).length;
+    
+    // 如果超过30%的中文没有被翻译，则返回更简单的处理
+    if (originalChinese > 0 && remainingChinese / originalChinese > 0.3) {
+      // 返回原文，让AI模型自己理解
+      return prompt;
     }
     
     return translated;

@@ -76,7 +76,7 @@ export const CuteButton = ({
 }
 
 // 可爱卡片组件
-interface CuteCardProps {
+interface CuteCardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: ReactNode
   hover?: boolean
   rainbow?: boolean
@@ -87,7 +87,8 @@ export const CuteCard = ({
   children, 
   hover = true,
   rainbow = false,
-  className = '' 
+  className = '',
+  ...props
 }: CuteCardProps) => {
   return (
     <div 
@@ -99,6 +100,7 @@ export const CuteCard = ({
         relative overflow-hidden
         ${className}
       `}
+      {...props}
     >
       {/* 背景装饰 */}
       <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-pink-100 to-purple-100 rounded-full -translate-y-16 translate-x-16 opacity-50" />

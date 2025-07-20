@@ -11,6 +11,8 @@ import { ArrowLeft, Mail, Lock, Sparkles, Zap, Users, Palette } from 'lucide-rea
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { migrateGuestDataToUser, getGuestImages } from '@/lib/guest-trial'
+import { CuteTabs } from '@/components/CuteTabs'
+import { MagicLinkLogin } from '@/components/ui/magic-link-login'
 
 function LoginPageContent() {
   const [email, setEmail] = useState('')
@@ -19,6 +21,11 @@ function LoginPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirect = searchParams.get('redirect') || '/'
+  
+  const loginTabs = [
+    { id: 'password', label: '密码登录', icon: '🔐' },
+    { id: 'magiclink', label: '邮箱验证', icon: '✉️' }
+  ]
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -98,28 +105,30 @@ function LoginPageContent() {
             </div>
             
             <p className="text-xl text-muted-foreground mb-8 leading-relaxed">
-              登录您的账户，继续您的AI创作之旅
+              将你的创意转化为精美的AI艺术作品，
+              <br />
+              支持多种风格，让想象力尽情绽放。
             </p>
-
-            {/* Features */}
-            <div className="space-y-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-blue-600 rounded-lg flex items-center justify-center">
-                  <Palette className="h-5 w-5 text-white" />
+            
+            {/* Feature Cards */}
+            <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto lg:mx-0">
+              <div className="text-center">
+                <div className="w-16 h-16 mx-auto mb-2 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                  <Sparkles className="h-8 w-8 text-purple-600 dark:text-purple-400" />
                 </div>
-                <span className="text-lg">6种精美艺术风格</span>
+                <span className="text-sm font-medium">多样风格</span>
               </div>
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
-                  <Zap className="h-5 w-5 text-white" />
+              <div className="text-center">
+                <div className="w-16 h-16 mx-auto mb-2 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                  <Palette className="h-8 w-8 text-blue-600 dark:text-blue-400" />
                 </div>
-                <span className="text-lg">快速AI图像生成</span>
+                <span className="text-sm font-medium">精美画质</span>
               </div>
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center">
-                  <Users className="h-5 w-5 text-white" />
+              <div className="text-center">
+                <div className="w-16 h-16 mx-auto mb-2 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+                  <Users className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
                 </div>
-                <span className="text-lg">数万用户的选择</span>
+                <span className="text-sm font-medium">数万用户的选择</span>
               </div>
             </div>
           </div>
@@ -151,48 +160,57 @@ function LoginPageContent() {
               </CardHeader>
 
               <CardContent className="space-y-6">
-                <form onSubmit={handleLogin} className="space-y-6">
-                  <div className="space-y-4">
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        type="email"
-                        placeholder="请输入邮箱地址"
-                        value={email}
-                        onChange={e => setEmail(e.target.value)}
-                        className="pl-10 h-12 border-2 focus:border-purple-500 rounded-xl transition-all duration-200"
-                        required
-                      />
-                    </div>
-                    
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        type="password"
-                        placeholder="请输入密码"
-                        value={password}
-                        onChange={e => setPassword(e.target.value)}
-                        className="pl-10 h-12 border-2 focus:border-purple-500 rounded-xl transition-all duration-200"
-                        required
-                      />
-                    </div>
-                  </div>
+                <CuteTabs tabs={loginTabs} defaultTab="password">
+                  {{
+                    'password': (
+                      <form onSubmit={handleLogin} className="space-y-6">
+                        <div className="space-y-4">
+                          <div className="relative">
+                            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              type="email"
+                              placeholder="请输入邮箱地址"
+                              value={email}
+                              onChange={e => setEmail(e.target.value)}
+                              className="pl-10 h-12 border-2 focus:border-purple-500 rounded-xl transition-all duration-200"
+                              required
+                            />
+                          </div>
+                          
+                          <div className="relative">
+                            <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              type="password"
+                              placeholder="请输入密码"
+                              value={password}
+                              onChange={e => setPassword(e.target.value)}
+                              className="pl-10 h-12 border-2 focus:border-purple-500 rounded-xl transition-all duration-200"
+                              required
+                            />
+                          </div>
+                        </div>
 
-                  <Button 
-                    type="submit" 
-                    disabled={loading}
-                    className="w-full h-12 text-lg font-semibold rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
-                  >
-                    {loading ? (
-                      <div className="flex items-center">
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                        登录中...
-                      </div>
-                    ) : (
-                      '立即登录'
-                    )}
-                  </Button>
-                </form>
+                        <Button 
+                          type="submit" 
+                          disabled={loading}
+                          className="w-full h-12 text-lg font-semibold rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+                        >
+                          {loading ? (
+                            <div className="flex items-center">
+                              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                              登录中...
+                            </div>
+                          ) : (
+                            '立即登录'
+                          )}
+                        </Button>
+                      </form>
+                    ),
+                    'magiclink': (
+                      <MagicLinkLogin redirectTo={redirect} />
+                    )
+                  }}
+                </CuteTabs>
 
                 <div className="space-y-4">
                   <div className="relative">
