@@ -117,7 +117,7 @@ export const CuteRechargeModal = ({ isOpen, onClose }: RechargeModalProps) => {
                         </div>
                       )}
                       {pkg.badge && (
-                        <CuteBadge color="pink" size="sm" className="mt-2">
+                        <CuteBadge color="pink" size="sm">
                           {pkg.badge}
                         </CuteBadge>
                       )}

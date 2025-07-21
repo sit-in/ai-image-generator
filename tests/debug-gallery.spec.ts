@@ -40,7 +40,7 @@ test.describe('Debug Gallery Loading', () => {
         const data = await response.json();
         return { success: true, data };
       } catch (error) {
-        return { success: false, error: error.message };
+        return { success: false, error: (error as Error).message };
       }
     });
     

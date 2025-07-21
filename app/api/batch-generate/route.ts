@@ -164,7 +164,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 创建子任务
-    const batchItems = styles.map(style => ({
+    const batchItems = styles.map((style: string) => ({
       batch_id: batchGeneration.id,
       style: style,
       status: 'pending'

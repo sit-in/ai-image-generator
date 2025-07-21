@@ -14,6 +14,11 @@ interface RateLimitEntry {
 // 内存存储（生产环境建议使用Redis）
 const store = new Map<string, RateLimitEntry>()
 
+// 警告提示
+if (process.env.NODE_ENV === 'production' && !process.env.REDIS_URL) {
+  console.warn('WARNING: Using in-memory rate limiting in production. This is not recommended for multi-instance deployments. Set REDIS_URL to enable Redis-based rate limiting.')
+}
+
 export class RateLimiter {
   private config: RateLimitConfig
 

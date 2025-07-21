@@ -70,8 +70,9 @@ export function useCSRFForm() {
       formData.append('_csrf', token)
       body = formData
     } else {
-      body = JSON.stringify({ ...formData, _csrf: token })
-      headers['Content-Type'] = 'application/json'
+      const dataToStringify = { ...formData, _csrf: token };
+      body = JSON.stringify(dataToStringify);
+      (headers as Record<string, string>)['Content-Type'] = 'application/json'
     }
 
     return fetch(url, {

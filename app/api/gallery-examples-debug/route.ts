@@ -21,7 +21,13 @@ export async function GET() {
       totalFound: ghibliData?.length || 0,
       supabaseImages: 0,
       otherImages: 0,
-      images: []
+      images: [] as Array<{
+        id: string;
+        url: string;
+        prompt: string;
+        isSupabase: boolean;
+        createdAt: string;
+      }>
     };
 
     if (ghibliData) {

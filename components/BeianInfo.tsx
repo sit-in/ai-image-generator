@@ -14,23 +14,22 @@ export function BeianInfo() {
           蜀ICP备14006373号-2
         </Link>
       </p>
-      <p>
+      {/* 如果有公安备案，请取消下面的注释并填入正确的备案号 */}
+      {/* <p>
         <Link 
           href="http://www.beian.gov.cn/portal/registerSystemInfo" 
           target="_blank" 
           rel="noopener noreferrer"
           className="hover:text-gray-700 inline-flex items-center gap-1"
         >
-          {/* 请下载公安备案图标后取消注释 */}
-          {/* <img 
+          <img 
             src="/beian-icon.png" 
             alt="公安备案图标" 
             className="w-4 h-4 inline-block"
-          /> */}
-          {/* 请替换为实际的公安备案号 */}
-          京公网安备 11010802000001号
+          />
+          蜀公网安备 XXXXXXXXXXXXX号
         </Link>
-      </p>
+      </p> */}
     </div>
   );
 }

@@ -8,7 +8,8 @@ export type Locale = (typeof locales)[number];
 
 export default getRequestConfig(async ({ requestLocale }) => {
   // 从请求中获取locale，如果没有则使用默认值
-  let locale = requestLocale || defaultLocale;
+  const awaitedLocale = await requestLocale;
+  let locale = awaitedLocale || defaultLocale;
   
   // 确保locale是支持的语言之一
   if (!locales.includes(locale as Locale)) {

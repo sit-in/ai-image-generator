@@ -1,5 +1,6 @@
 import DOMPurify from 'isomorphic-dompurify'
 import { z } from 'zod'
+import { sensitiveWordsFilter } from './sensitive-words'
 
 // 输入验证模式
 export const schemas = {
@@ -83,30 +84,50 @@ export function sanitizeInput(input: string): string {
   return cleaned.trim().replace(/\s+/g, ' ')
 }
 
-// 敏感词过滤
-const sensitiveWords = [
-  // 暴力相关
-  '杀', '死', '血', '暴力', '恐怖', '残忍',
-  // 色情相关
-  '裸', '性', '色情', '成人', '情色',
-  // 政治敏感
-  '政治', '革命', '政府', '领导人',
-  // 仇恨言论
-  '仇恨', '歧视', '种族', '宗教冲突',
-  // 违法内容
-  '毒品', '赌博', '诈骗', '盗窃', '走私'
-]
-
+// 敏感词检测（使用增强版过滤器）
 export function containsSensitiveWords(text: string): boolean {
-  const lowerText = text.toLowerCase()
-  return sensitiveWords.some(word => lowerText.includes(word))
+  const result = sensitiveWordsFilter.check(text);
+  
+  if (result.isSensitive) {
+    console.log('Sensitive words detected:', result.matchedWords);
+    if (result.suggestions) {
+      console.log('Suggestions:', result.suggestions);
+    }
+  }
+  
+  return result.isSensitive;
 }
 
-// 过滤敏感词
+// 获取敏感词检测详情
+export function getSensitiveWordsDetails(text: string) {
+  return sensitiveWordsFilter.check(text);
+}
+
+// 过滤敏感词（替换为星号）
 export function filterSensitiveWords(text: string): string {
+  return sensitiveWordsFilter.clean(text);
+}
+
+// 保留原有的简单词汇列表用于快速检查
+const basicSensitiveWords = [
+  '杀', '死', '血', '暴力', '恐怖', '残忍',
+  '裸', '性', '色情', '成人', '情色',
+  '政治', '革命', '政府', '领导人',
+  '仇恨', '歧视', '种族', '宗教冲突',
+  '毒品', '赌博', '诈骗', '盗窃', '走私'
+];
+
+// 快速检查函数（用于性能关键场景）
+export function quickSensitiveCheck(text: string): boolean {
+  const lowerText = text.toLowerCase();
+  return basicSensitiveWords.some(word => lowerText.includes(word));
+}
+
+// 原有的过滤函数实现（兼容性）
+function legacyFilterSensitiveWords(text: string): string {
   let filteredText = text
   
-  sensitiveWords.forEach(word => {
+  basicSensitiveWords.forEach(word => {
     const regex = new RegExp(word, 'gi')
     filteredText = filteredText.replace(regex, '*'.repeat(word.length))
   })
@@ -116,7 +137,16 @@ export function filterSensitiveWords(text: string): string {
 
 // CSRF令牌生成和验证
 export class CSRFProtection {
-  private static secret = process.env.CSRF_SECRET || 'default-secret-change-in-production'
+  private static get secret(): string {
+    const secret = process.env.CSRF_SECRET;
+    if (!secret || secret === 'default-secret-change-in-production') {
+      console.error('WARNING: CSRF_SECRET is not set or using default value. This is insecure in production!');
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('CSRF_SECRET must be set in production environment');
+      }
+    }
+    return secret || 'development-only-secret';
+  }
   
   static generateToken(sessionId: string): string {
     const crypto = require('crypto')

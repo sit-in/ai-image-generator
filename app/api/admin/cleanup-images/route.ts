@@ -40,10 +40,15 @@ export async function POST(request: Request) {
     for (const record of history) {
       try {
         // 检查图片URL是否可访问
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        
         const response = await fetch(record.image_url, { 
           method: 'HEAD',
-          timeout: 5000 
+          signal: controller.signal
         });
+        
+        clearTimeout(timeoutId);
         
         if (response.ok) {
           validRecords.push(record);

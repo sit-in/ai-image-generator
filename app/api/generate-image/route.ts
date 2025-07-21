@@ -6,6 +6,7 @@ import { rateLimiters, createRateLimitResponse } from '@/lib/rate-limiter';
 import { schemas, validateInput, sanitizeInput, containsSensitiveWords, logSecurityEvent } from '@/lib/security';
 import Replicate from "replicate";
 import { PromptOptimizer } from '@/lib/prompt-optimizer';
+import { generateGuestFingerprint, checkGuestTrialStatus, markGuestTrialUsed } from '@/lib/guest-tracking';
 
 export async function POST(request: Request) {
   try {
@@ -50,10 +51,20 @@ export async function POST(request: Request) {
       console.log('游客模式生成图片');
       console.log('游客请求参数:', { prompt, style, isGuest });
       
-      // 检查游客是否已经使用过试用机会
-      // 注意：这里需要在服务端也进行验证，防止客户端绕过
-      // 但由于服务端无法访问localStorage，我们依赖客户端的诚实性
-      // 在生产环境中，应该使用IP地址或设备指纹来跟踪游客试用
+      // 服务端验证游客试用状态
+      const guestFingerprint = generateGuestFingerprint(request);
+      const { hasUsedTrial, usedAt } = await checkGuestTrialStatus(guestFingerprint);
+      
+      if (hasUsedTrial) {
+        return NextResponse.json(
+          { 
+            error: '您已经使用过免费试用机会', 
+            details: '请注册账号以继续使用',
+            usedAt: usedAt?.toISOString()
+          },
+          { status: 403 }
+        );
+      }
     } else {
       // 注册用户模式需要验证
       if (!userId) {
@@ -163,7 +174,7 @@ export async function POST(request: Request) {
       const text = new TextDecoder().decode(Buffer.concat(chunks));
       imageUrl = text.trim();
     } else {
-      imageUrl = output as string;
+      imageUrl = String(output);
     }
     
     console.log('Replicate返回结果:', output);
@@ -189,6 +200,10 @@ export async function POST(request: Request) {
       publicUrl = saveResult.publicUrl;
       storagePath = saveResult.storagePath;
       console.log('游客模式 - 保存成功，公开URL:', publicUrl);
+      
+      // 标记游客已使用试用
+      const guestFingerprint = generateGuestFingerprint(request);
+      await markGuestTrialUsed(guestFingerprint, publicUrl, sanitizedPrompt, style);
     } else {
       // 注册用户：保存到存储
       const saveResult = await saveImageToStorage(imageUrl, userId);
@@ -301,35 +316,7 @@ export async function POST(request: Request) {
   }
 }
 
-export async function generateImage(prompt: string) {
-  const response = await fetch('/api/generate-image', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ prompt }),
-  });
+// Remove the generateImage function as it shouldn't be in the API route file
+// This function should be in a client-side file instead
 
-  if (!response.ok) {
-    const data = await response.json();
-    throw new Error(data.error || '生成图片失败');
-  }
-
-  const data = await response.json();
-  return { imageUrl: data.imageUrl };
-}
-
-// 添加一个获取可用模型的函数
-async function getAvailableModels() {
-  const response = await fetch('https://openrouter.ai/api/v1/models', {
-    headers: {
-      'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`
-    }
-  });
-  
-  if (!response.ok) {
-    throw new Error('Failed to fetch available models');
-  }
-  
-  return response.json();
-} 
+ 

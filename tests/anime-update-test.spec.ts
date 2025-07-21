@@ -8,18 +8,18 @@ test.describe('动漫风格图片更新测试', () => {
     
     expect(response.ok()).toBeTruthy();
     
-    const animeImages = data.examples.filter(ex => ex.style === '动漫');
+    const animeImages = data.examples.filter((ex: any) => ex.style === '动漫');
     console.log(`\nAPI返回 ${animeImages.length} 张动漫风格图片：`);
     
     // 验证包含 smart girl
-    const hasSmartGirl = animeImages.some(img => 
+    const hasSmartGirl = animeImages.some((img: any) => 
       img.prompt.toLowerCase() === 'smart girl'
     );
     expect(hasSmartGirl).toBeTruthy();
     console.log('✅ 包含 "smart girl" 图片');
     
     // 验证不包含不合适的图片
-    const hasInappropriate = animeImages.some(img => {
+    const hasInappropriate = animeImages.some((img: any) => {
       const prompt = img.prompt.toLowerCase();
       return prompt === 'handsome boy' || 
              prompt === '公主' || 
@@ -29,7 +29,7 @@ test.describe('动漫风格图片更新测试', () => {
     console.log('✅ 已过滤掉不合适的图片');
     
     // 打印当前动漫图片
-    animeImages.forEach((img, index) => {
+    animeImages.forEach((img: any, index: number) => {
       console.log(`${index + 1}. "${img.prompt}"`);
     });
     

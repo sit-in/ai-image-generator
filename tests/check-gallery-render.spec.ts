@@ -53,7 +53,7 @@ test('检查画廊渲染问题', async ({ page }) => {
   });
   
   // 检查网络请求
-  const imageRequests = [];
+  const imageRequests: string[] = [];
   page.on('request', request => {
     if (request.resourceType() === 'image') {
       imageRequests.push(request.url());

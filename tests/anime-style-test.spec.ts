@@ -9,11 +9,11 @@ test.describe('动漫风格图片测试', () => {
     expect(response.ok()).toBeTruthy();
     
     // 找出所有动漫风格的图片
-    const animeImages = data.examples.filter(ex => ex.style === '动漫');
+    const animeImages = data.examples.filter((ex: any) => ex.style === '动漫');
     console.log(`找到 ${animeImages.length} 张动漫风格图片`);
     
     // 检查是否没有 "handsome boy"
-    const hasHandsomeBoy = animeImages.some(img => 
+    const hasHandsomeBoy = animeImages.some((img: any) => 
       img.prompt.toLowerCase() === 'handsome boy'
     );
     expect(hasHandsomeBoy).toBeFalsy();
@@ -21,7 +21,7 @@ test.describe('动漫风格图片测试', () => {
     
     // 打印当前的动漫图片信息
     console.log('\n当前展示的动漫图片：');
-    animeImages.forEach((img, index) => {
+    animeImages.forEach((img: any, index: number) => {
       console.log(`${index + 1}. Prompt: "${img.prompt}"`);
       console.log(`   URL: ${img.imageUrl}`);
     });
@@ -76,7 +76,7 @@ test.describe('动漫风格图片测试', () => {
     
     // 统计每种风格的数量
     const styles = ['自然', '动漫', '油画', '水彩', '像素', '吉卜力'];
-    const styleCounts = {};
+    const styleCounts: Record<string, number> = {};
     
     for (const style of styles) {
       const count = await page.locator(`span:has-text("${style}")`).count();
@@ -90,7 +90,7 @@ test.describe('动漫风格图片测试', () => {
     
     // 确保每种风格至少有一张
     for (const style of styles) {
-      expect(styleCounts[style]).toBeGreaterThan(0);
+      expect(styleCounts[style] || 0).toBeGreaterThan(0);
     }
     
     console.log('\n✅ 所有6种风格都有展示');
