@@ -7,8 +7,13 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get('userId')
 
+    // 如果没有提供 userId，返回游客积分
     if (!userId) {
-      return NextResponse.json({ error: '需要用户ID' }, { status: 400 })
+      return NextResponse.json({ 
+        credits: 30, 
+        isGuest: true,
+        message: '游客账户' 
+      })
     }
 
     // 验证用户认证

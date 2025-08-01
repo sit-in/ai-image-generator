@@ -3,10 +3,10 @@ import { securityHeaders } from './next-security.config.js'
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: true, // 暂时忽略 ESLint 错误以完成构建
   },
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   // 优化CSS处理
   webpack: (config, { dev, isServer }) => {

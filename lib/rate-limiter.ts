@@ -94,38 +94,20 @@ export class RateLimiter {
       }
     }
   }
+
+  // 重置指定标识符的速率限制
+  reset(identifier: string): void {
+    // 删除所有包含该标识符的键
+    for (const key of store.keys()) {
+      if (key.includes(identifier)) {
+        store.delete(key);
+      }
+    }
+  }
 }
 
-// 预定义的限制器
-export const rateLimiters = {
-  // 图片生成限制：每分钟3次
-  imageGeneration: new RateLimiter({
-    windowMs: 60 * 1000, // 1分钟
-    maxRequests: 3,
-    message: '图片生成请求过于频繁，请稍后再试'
-  }),
-  
-  // API通用限制：每分钟100次
-  api: new RateLimiter({
-    windowMs: 60 * 1000, // 1分钟
-    maxRequests: 100,
-    message: 'API请求过于频繁，请稍后再试'
-  }),
-  
-  // 登录限制：每5分钟10次
-  auth: new RateLimiter({
-    windowMs: 5 * 60 * 1000, // 5分钟
-    maxRequests: 10,
-    message: '登录尝试过于频繁，请稍后再试'
-  }),
-  
-  // 兑换码限制：每小时5次
-  redeem: new RateLimiter({
-    windowMs: 60 * 60 * 1000, // 1小时
-    maxRequests: 5,
-    message: '兑换码使用过于频繁，请稍后再试'
-  })
-}
+// 从工厂导入预定义的限制器实例
+export { rateLimiters } from './rate-limiter-factory'
 
 // 创建速率限制响应
 export function createRateLimitResponse(message: string, resetTime: number) {

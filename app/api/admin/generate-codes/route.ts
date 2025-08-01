@@ -1,8 +1,15 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, NextRequest } from 'next/server'
 import { supabaseServer } from '@/lib/supabase-server'
 import { generateRedeemCode, getAmountByType, RedeemCodeType } from '@/lib/redeem-utils'
+import { requireAdmin } from '@/lib/auth'
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  // 验证管理员权限
+  const { authorized, response } = await requireAdmin(req)
+  if (!authorized && response) {
+    return response
+  }
+
   try {
     const { type, count, expiresInDays = 30 } = await req.json()
     

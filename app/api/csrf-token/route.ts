@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { NextRequest } from 'next/server'
-import { CSRFProtection } from '@/lib/security'
+import { CSRFProtection } from '@/lib/csrf'
 
 // 标记为动态路由，因为使用了 cookies
 export const dynamic = 'force-dynamic'
@@ -32,30 +32,5 @@ export async function GET(request: NextRequest) {
       { success: false, error: 'CSRF token生成失败' },
       { status: 500 }
     )
-  }
-}
-
-// 验证CSRF token的辅助函数
-export function validateCSRFToken(request: NextRequest): { valid: boolean; error?: string } {
-  try {
-    const token = request.headers.get('x-csrf-token') || 
-                 request.headers.get('X-CSRF-Token')
-    
-    if (!token) {
-      return { valid: false, error: '缺少CSRF token' }
-    }
-    
-    const sessionId = request.cookies.get('session-id')?.value || 
-                     request.headers.get('x-session-id') || 
-                     'anonymous'
-    
-    const isValid = CSRFProtection.validateToken(token, sessionId)
-    
-    return { 
-      valid: isValid, 
-      error: isValid ? undefined : 'CSRF token无效或已过期' 
-    }
-  } catch (error) {
-    return { valid: false, error: 'CSRF token验证失败' }
   }
 }

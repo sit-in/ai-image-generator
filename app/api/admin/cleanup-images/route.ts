@@ -1,26 +1,16 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
+import { requireAdmin } from '@/lib/auth';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  // 验证管理员权限
+  const { authorized, response } = await requireAdmin(request);
+  if (!authorized && response) {
+    return response;
+  }
+
   try {
     const { action = 'scan' } = await request.json();
-    
-    // 验证管理员权限
-    const { data: { session } } = await supabaseServer.auth.getSession();
-    if (!session) {
-      return NextResponse.json({ error: '请先登录' }, { status: 401 });
-    }
-
-    // 检查管理员权限
-    const { data: profile } = await supabaseServer
-      .from('profiles')
-      .select('is_admin')
-      .eq('id', session.user.id)
-      .single();
-
-    if (!profile?.is_admin) {
-      return NextResponse.json({ error: '无管理员权限' }, { status: 403 });
-    }
 
     // 获取所有生成历史记录
     const { data: history, error: historyError } = await supabaseServer
@@ -142,23 +132,14 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  // 验证管理员权限
+  const { authorized, response } = await requireAdmin(request);
+  if (!authorized && response) {
+    return response;
+  }
+
   try {
-    // 验证管理员权限
-    const { data: { session } } = await supabaseServer.auth.getSession();
-    if (!session) {
-      return NextResponse.json({ error: '请先登录' }, { status: 401 });
-    }
-
-    const { data: profile } = await supabaseServer
-      .from('profiles')
-      .select('is_admin')
-      .eq('id', session.user.id)
-      .single();
-
-    if (!profile?.is_admin) {
-      return NextResponse.json({ error: '无管理员权限' }, { status: 403 });
-    }
 
     // 获取统计信息
     const { data: totalHistory, error } = await supabaseServer

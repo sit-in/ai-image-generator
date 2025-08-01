@@ -1,6 +1,8 @@
 import DOMPurify from 'isomorphic-dompurify'
 import { z } from 'zod'
 import { sensitiveWordsFilter } from './sensitive-words'
+import { CSRFProtection } from './csrf'
+import { NextResponse } from 'next/server'
 
 // 输入验证模式
 export const schemas = {
@@ -135,47 +137,7 @@ function legacyFilterSensitiveWords(text: string): string {
   return filteredText
 }
 
-// CSRF令牌生成和验证
-export class CSRFProtection {
-  private static get secret(): string {
-    const secret = process.env.CSRF_SECRET;
-    if (!secret || secret === 'default-secret-change-in-production') {
-      console.error('WARNING: CSRF_SECRET is not set or using default value. This is insecure in production!');
-      if (process.env.NODE_ENV === 'production') {
-        throw new Error('CSRF_SECRET must be set in production environment');
-      }
-    }
-    return secret || 'development-only-secret';
-  }
-  
-  static generateToken(sessionId: string): string {
-    const crypto = require('crypto')
-    const timestamp = Date.now().toString()
-    const data = `${sessionId}:${timestamp}`
-    const hash = crypto.createHmac('sha256', this.secret).update(data).digest('hex')
-    return `${timestamp}:${hash}`
-  }
-  
-  static validateToken(token: string, sessionId: string): boolean {
-    try {
-      const [timestamp, hash] = token.split(':')
-      const tokenAge = Date.now() - parseInt(timestamp)
-      
-      // 令牌有效期：1小时
-      if (tokenAge > 3600000) {
-        return false
-      }
-      
-      const crypto = require('crypto')
-      const data = `${sessionId}:${timestamp}`
-      const expectedHash = crypto.createHmac('sha256', this.secret).update(data).digest('hex')
-      
-      return hash === expectedHash
-    } catch {
-      return false
-    }
-  }
-}
+// CSRF 功能已移至 ./csrf.ts
 
 // 输入验证中间件
 export function validateInput<T>(schema: z.ZodSchema<T>, input: unknown): { success: boolean; data?: T; error?: string } {
@@ -239,3 +201,34 @@ export function logSecurityEvent(event: {
   // 在生产环境中，您可能想要发送到监控服务
   // 例如：Sentry, DataDog, 或自定义日志服务
 }
+
+// CSRF Token 验证辅助函数
+export function validateCSRFToken(request: Request): { valid: boolean; error?: string } {
+  try {
+    const token = request.headers.get('x-csrf-token') || 
+                 request.headers.get('X-CSRF-Token');
+    
+    if (!token) {
+      return { valid: false, error: '缺少CSRF token' };
+    }
+    
+    // 从请求中获取 session ID
+    const cookies = request.headers.get('cookie') || '';
+    const sessionId = cookies.match(/session-id=([^;]+)/)?.[1] || 
+                     request.headers.get('x-session-id') || 
+                     'anonymous';
+    
+    const isValid = CSRFProtection.validateToken(token, sessionId);
+    
+    return { 
+      valid: isValid, 
+      error: isValid ? undefined : 'CSRF token无效或已过期' 
+    };
+  } catch (error) {
+    return { valid: false, error: 'CSRF token验证失败' };
+  }
+}
+
+// 导出所有安全相关的功能
+// Rate limiters are exported directly from rate-limiter-factory
+// createRateLimitResponse is exported from rate-limiter-wrapper

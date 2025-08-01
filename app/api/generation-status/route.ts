@@ -68,23 +68,5 @@ export async function POST(request: Request) {
   return NextResponse.json({ success: true });
 }
 
-// 用于SSE的端点
-export async function* streamGenerationStatus(generationId: string) {
-  while (true) {
-    const progress = generationProgress.get(generationId);
-    
-    if (!progress) {
-      yield `data: ${JSON.stringify({ error: '任务不存在' })}\n\n`;
-      break;
-    }
-
-    yield `data: ${JSON.stringify(progress)}\n\n`;
-
-    if (progress.status === 'completed' || progress.status === 'failed') {
-      break;
-    }
-
-    // 每秒更新一次
-    await new Promise(resolve => setTimeout(resolve, 1000));
-  }
-}
+// SSE 功能移到单独的路由中实现
+// 参见 /api/generation-status/stream/[id]/route.ts

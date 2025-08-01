@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server'
 import { supabaseServer } from '@/lib/supabase-server'
 import { validateRedeemCode } from '@/lib/redeem-utils'
-import { rateLimiters, createRateLimitResponse } from '@/lib/rate-limiter'
-import { schemas, validateInput, sanitizeInput, logSecurityEvent } from '@/lib/security'
+import { createRateLimitResponse } from '@/lib/rate-limiter'
+import { schemas, validateInput, sanitizeInput, logSecurityEvent, rateLimiters } from '@/lib/security'
+import { rateLimiterConfigs } from '@/lib/rate-limiter-factory'
 import { requireAuth } from '@/lib/auth-enhanced'
 
 export async function POST(req: Request) {
@@ -11,7 +12,7 @@ export async function POST(req: Request) {
     const rateLimitResult = rateLimiters.redeem.check(req as any);
     if (!rateLimitResult.allowed) {
       return createRateLimitResponse(
-        rateLimiters.redeem['config'].message || '兑换请求过于频繁',
+        rateLimiterConfigs.redeem.message || '兑换请求过于频繁',
         rateLimitResult.resetTime
       );
     }
@@ -141,7 +142,7 @@ export async function POST(req: Request) {
     });
 
     // 添加速率限制头部
-    response.headers.set('X-RateLimit-Limit', rateLimiters.redeem['config'].maxRequests.toString());
+    response.headers.set('X-RateLimit-Limit', rateLimiterConfigs.redeem.maxRequests.toString());
     response.headers.set('X-RateLimit-Remaining', rateLimitResult.remaining.toString());
     response.headers.set('X-RateLimit-Reset', new Date(rateLimitResult.resetTime).toISOString());
     

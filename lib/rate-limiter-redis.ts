@@ -162,6 +162,21 @@ export class EnhancedRateLimiter {
       }
     }
   }
+
+  // 重置指定客户端的速率限制
+  reset(identifier: string): void {
+    const key = `${this.prefix}:${identifier}`;
+    
+    // 如果有 Redis，清除 Redis 中的记录
+    if (redis) {
+      redis.del(key).catch(error => {
+        console.error('Failed to reset rate limit in Redis:', error);
+      });
+    }
+    
+    // 清除内存中的记录
+    memoryStore.delete(key);
+  }
 }
 
 // 预定义的限制器（使用增强版）

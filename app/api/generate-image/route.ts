@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
 import { checkCredits, deductCredits } from '@/lib/credits';
 import { saveImageToStorage } from '@/lib/storage';
-import { rateLimiters, createRateLimitResponse } from '@/lib/rate-limiter';
 import { schemas, validateInput, sanitizeInput, containsSensitiveWords, logSecurityEvent } from '@/lib/security';
+import { checkRateLimit, createRateLimitResponse } from '@/lib/rate-limiter-wrapper';
 import Replicate from "replicate";
 import { PromptOptimizer } from '@/lib/prompt-optimizer';
 import { generateGuestFingerprint, checkGuestTrialStatus, markGuestTrialUsed } from '@/lib/guest-tracking';
@@ -11,10 +11,13 @@ import { generateGuestFingerprint, checkGuestTrialStatus, markGuestTrialUsed } f
 export async function POST(request: Request) {
   try {
     // 速率限制检查
-    const rateLimitResult = rateLimiters.imageGeneration.check(request as any);
+    const rateLimitResult = checkRateLimit(request, {
+      windowMs: 60 * 1000, // 1分钟
+      maxRequests: 5 // 最多5次请求
+    });
     if (!rateLimitResult.allowed) {
       return createRateLimitResponse(
-        rateLimiters.imageGeneration['config'].message || '请求过于频繁',
+        '请求过于频繁，请稍后再试',
         rateLimitResult.resetTime
       );
     }
@@ -251,7 +254,7 @@ export async function POST(request: Request) {
     // 添加速率限制头部
     console.log('准备返回成功响应，图片URL:', publicUrl);
     const response = NextResponse.json({ imageUrl: publicUrl });
-    response.headers.set('X-RateLimit-Limit', rateLimiters.imageGeneration['config'].maxRequests.toString());
+    response.headers.set('X-RateLimit-Limit', '5'); // 每分钟5次
     response.headers.set('X-RateLimit-Remaining', rateLimitResult.remaining.toString());
     response.headers.set('X-RateLimit-Reset', new Date(rateLimitResult.resetTime).toISOString());
     

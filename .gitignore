@@ -63,3 +63,8 @@ public/screenshots/
 .mcp.json
 mcp-logs/
 .mcp-cache/
+
+# Playwright test results
+playwright-report/
+test-results/
+/tmp/

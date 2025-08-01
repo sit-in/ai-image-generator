@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server'
 import { NextRequest } from 'next/server'
 import { supabaseServer } from '@/lib/supabase-server'
 import { checkCredits, deductCredits } from '@/lib/credits'
-import { rateLimiters, createRateLimitResponse } from '@/lib/rate-limiter'
-import { schemas, validateInput, sanitizeInput, containsSensitiveWords, logSecurityEvent } from '@/lib/security'
+import { createRateLimitResponse } from '@/lib/rate-limiter'
+import { schemas, validateInput, sanitizeInput, containsSensitiveWords, logSecurityEvent, rateLimiters } from '@/lib/security'
+import { rateLimiterConfigs } from '@/lib/rate-limiter-factory'
 import { requireAuth } from '@/lib/auth-enhanced'
 import { z } from 'zod'
 
@@ -223,7 +224,7 @@ export async function POST(request: NextRequest) {
     })
 
     // 添加速率限制头部
-    response.headers.set('X-RateLimit-Limit', rateLimiters.imageGeneration['config'].maxRequests.toString())
+    response.headers.set('X-RateLimit-Limit', rateLimiterConfigs.imageGeneration.maxRequests.toString())
     response.headers.set('X-RateLimit-Remaining', rateLimitResult.remaining.toString())
     response.headers.set('X-RateLimit-Reset', new Date(rateLimitResult.resetTime).toISOString())
     

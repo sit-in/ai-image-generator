@@ -1,46 +1,35 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { extractTokenEdge, parseJWT, isTokenExpired } from './lib/auth-edge'
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   
   // i18n处理暂时禁用，等待修复
 
-  // 获取多种可能的token来源
-  const authHeader = request.headers.get('authorization')
-  const bearerToken = authHeader?.replace('Bearer ', '')
+  // 使用 Edge 兼容版本提取 token
+  const token = extractTokenEdge(request)
+  const hasAuth = !!token
   
-  // 检查Supabase v2 session cookies
-  // Supabase v2 使用带有项目引用的cookie名称
-  let projectRef = ''
-  try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
-    const match = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)
-    projectRef = match ? match[1] : ''
-  } catch (error) {
-    // 如果解析失败，使用默认值
-    console.error('Failed to parse Supabase URL:', error)
+  // 解析 token（不验证签名，仅用于中间件路由保护）
+  let userId: string | null = null
+  let tokenValid = false
+  
+  if (token) {
+    const decoded = parseJWT(token)
+    if (decoded?.sub && !isTokenExpired(decoded.exp)) {
+      userId = decoded.sub
+      tokenValid = true
+    }
   }
   
-  // Supabase v2 cookie格式: sb-<project-ref>-auth-token
-  const authTokenCookie = request.cookies.get(`sb-${projectRef}-auth-token`)?.value
-  const authTokenParts = request.cookies.get(`sb-${projectRef}-auth-token.0`)?.value
-  const authTokenParts1 = request.cookies.get(`sb-${projectRef}-auth-token.1`)?.value
-  
-  // 如果有任何形式的认证信息，认为用户已登录
-  const hasAuth = !!(bearerToken || authTokenCookie || authTokenParts || authTokenParts1)
-  
   // Debug logging
-  if (pathname === '/recharge') {
-    console.log('Middleware - Recharge page auth check:', {
+  if (pathname === '/recharge' || pathname.startsWith('/admin')) {
+    console.log('Middleware - Auth check:', {
       pathname,
-      projectRef,
       hasAuth,
-      bearerToken: !!bearerToken,
-      authTokenCookie: !!authTokenCookie,
-      authTokenParts: !!authTokenParts,
-      authTokenParts1: !!authTokenParts1,
-      cookies: request.cookies.getAll().map(c => c.name)
+      tokenValid,
+      userId
     })
   }
 
@@ -91,10 +80,12 @@ export function middleware(request: NextRequest) {
     return response
   }
 
-  // 管理员路由需要额外验证（这里简化处理，实际应该验证JWT中的admin字段）
-  if (isAdminRoute && hasAuth) {
-    // 这里应该解析JWT验证admin权限，为了简化暂时跳过
-    // 在实际应用中，您需要验证JWT中的admin字段
+  // 管理员路由在中间件层面只检查是否登录
+  // 具体的管理员权限验证在 API 路由中进行
+  if (isAdminRoute && !hasAuth) {
+    const loginUrl = new URL('/login', request.url)
+    loginUrl.searchParams.set('redirect', pathname)
+    return NextResponse.redirect(loginUrl)
   }
 
   return NextResponse.next()
@@ -108,8 +99,7 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - public folder
-     * - api (API routes)
      */
-    '/((?!_next/static|_next/image|favicon.ico|public|api).*)',
+    '/((?!_next/static|_next/image|favicon.ico|public).*)',
   ],
 }
